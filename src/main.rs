@@ -34,6 +34,7 @@ async fn main() {
 
 async fn handle_request(providers: Arc<provider::Map>, req: Request<Body>) -> Response<Body> {
   match req.uri().path() {
+    "/" => routes::root(),
     "/api/ask" => routes::ask(providers, req).await,
     _ => routes::default(),
   }

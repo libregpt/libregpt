@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LibreGPT</title>
+  </head>
+  <body>
+    <ul id="messages"></ul>
+
+    <form id="form">
+      <select id="provider">
+        <option value="bai">BAI (gpt-3.5)</option>
+      </select>
+      <input id="prompt" type="text">
+      <input id="submit" type="submit" value="Send">
+    </form>
+
+    <script>
+      const form = document.getElementById("form");
+      const submit = document.getElementById("submit");
+      const provider = document.getElementById("provider");
+      const prompt = document.getElementById("prompt");
+      const messages = document.getElementById("messages");
+      let lastMessageId;
+
+      provider.addEventListener("change", () => {
+        lastMessageId = undefined;
+        messages.innerHTML = "";
+      });
+
+      function appendMessage() {
+        const msg = document.createElement("li");
+        messages.appendChild(msg);
+        return msg;
+      }
+
+      form.addEventListener("submit", async function(e) {
+        e.preventDefault();
+        submit.setAttribute("disabled", "");
+
+        appendMessage().innerText = prompt.value;
+
+        const params = new URLSearchParams({
+          provider: provider.value,
+          prompt: prompt.value,
+        });
+
+        if (lastMessageId)
+          params.set("pmid", lastMessageId);
+
+        prompt.value = "";
+
+        const res = await fetch(`${location.origin}/api/ask?${params}`);
+
+        lastMessageId = res.headers.get("msg-id");
+
+        const msg = appendMessage();
+        const stream = res.body.pipeThrough(new TextDecoderStream());
+
+        for await (const chunk of stream) {
+          msg.innerText += chunk;
+        }
+
+        submit.removeAttribute("disabled");
+      });
+    </script>
+  </body>
+</html>

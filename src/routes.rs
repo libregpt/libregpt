@@ -6,6 +6,13 @@ use url::form_urlencoded;
 
 use crate::provider;
 
+pub fn root() -> Response<Body> {
+  Response::builder()
+    .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
+    .body(Body::from(include_str!("../static/index.html")))
+    .unwrap()
+}
+
 pub async fn ask(providers: Arc<provider::Map>, req: Request<Body>) -> Response<Body> {
   let Some(query) = req.uri().query() else {
     return bad_request("empty query");
