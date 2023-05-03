@@ -85,7 +85,6 @@ impl super::Provider for Provider {
         for partial_msg in chunk.split(MSG_PREFIX) {
           if !partial_msg.is_empty() && partial_msg != "\n" {
             let mut raw_msg = String::with_capacity(MSG_PREFIX.len() + partial_msg.len());
-
             raw_msg.push_str(MSG_PREFIX);
             raw_msg.push_str(partial_msg);
 
