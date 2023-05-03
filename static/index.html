@@ -37,6 +37,11 @@
 
       form.addEventListener("submit", async function(e) {
         e.preventDefault();
+
+        prompt.value = prompt.value.trim();
+
+        if (!prompt.value) return;
+
         submit.setAttribute("disabled", "");
 
         appendMessage().innerText = prompt.value;

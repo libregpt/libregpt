@@ -36,15 +36,19 @@ pub async fn ask(providers: Arc<provider::Map>, req: Request<Body>) -> Response<
     return bad_request("missing provider param");
   };
 
-  let Some(prompt) = prompt else {
+  let Some(prompt) = prompt.as_ref().map(|p| p.trim()) else {
     return bad_request("missing prompt param");
+  };
+
+  if prompt.is_empty() {
+    return bad_request("prompt param is empty");
   };
 
   let Some(provider) = providers.get(provider_name.as_ref()) else {
     return bad_request("invalid provider param");
   };
 
-  match provider.ask(&prompt, parent_msg_id).await {
+  match provider.ask(prompt, parent_msg_id).await {
     Ok((msg_id, body)) => Response::builder()
       .header(header::CONTENT_TYPE, "application/octet-stream")
       .header("msg-id", msg_id)
