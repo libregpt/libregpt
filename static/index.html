@@ -10,7 +10,7 @@
     <div id="conversations"></div>
 
     <div id="chat">
-      <ul id="messages"></ul>
+      <div id="messages"></div>
 
       <form id="form" autocomplete="off">
         <div id="prompt-and-submit">
@@ -53,7 +53,7 @@
       prompt.addEventListener("input", updatePromptArea);
 
       function appendMessage() {
-        const msg = document.createElement("li");
+        const msg = document.createElement("div");
         messages.appendChild(msg);
         return msg;
       }
@@ -69,6 +69,7 @@
         provider.setAttribute("disabled", "");
 
         appendMessage().innerText = trimmedPromptValue;
+        messages.scrollTop = messages.scrollHeight;
 
         const params = new URLSearchParams({
           provider: provider.value,
@@ -91,6 +92,7 @@
 
         for await (const chunk of stream) {
           msg.innerText += chunk;
+          messages.scrollTop = messages.scrollHeight;
         }
 
         submit.removeAttribute("disabled");

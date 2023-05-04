@@ -21,6 +21,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
+  gap: var(--gap);
 }
 
 #conversations, #chat {
@@ -31,6 +32,12 @@ body {
 
 #messages {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  overflow-y: scroll;
 }
 
 #form {
