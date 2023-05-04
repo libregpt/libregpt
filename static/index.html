@@ -66,6 +66,7 @@
         if (!trimmedPromptValue) return;
 
         submit.setAttribute("disabled", "");
+        provider.setAttribute("disabled", "");
 
         appendMessage().innerText = trimmedPromptValue;
 
@@ -93,6 +94,7 @@
         }
 
         submit.removeAttribute("disabled");
+        provider.removeAttribute("disabled");
       });
     </script>
   </body>
