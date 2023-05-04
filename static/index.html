@@ -3,18 +3,27 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="/main.css">
     <title>LibreGPT</title>
   </head>
   <body>
-    <ul id="messages"></ul>
+    <div id="conversations"></div>
 
-    <form id="form">
-      <select id="provider">
-        <option value="bai">BAI (gpt-3.5)</option>
-      </select>
-      <input id="prompt" type="text">
-      <input id="submit" type="submit" value="Send">
-    </form>
+    <div id="chat">
+      <ul id="messages"></ul>
+
+      <form id="form" autocomplete="off">
+        <div id="prompt-and-submit">
+          <textarea id="prompt" rows="1" autofocus></textarea>
+          <input id="submit" type="submit" value="Send">
+        </div>
+        <div>
+          <select id="provider">
+            <option value="bai">BAI (gpt-3.5)</option>
+          </select>
+        </div>
+      </form>
+    </div>
 
     <script>
       const form = document.getElementById("form");
@@ -29,6 +38,20 @@
         messages.innerHTML = "";
       });
 
+      prompt.addEventListener("keypress", function (e) {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          submit.click();
+        }
+      });
+
+      function updatePromptArea() {
+        prompt.style.cssText = "height: auto; padding: 0;";
+        prompt.style.cssText = "height: " + prompt.scrollHeight + "px;";
+      }
+
+      prompt.addEventListener("input", updatePromptArea);
+
       function appendMessage() {
         const msg = document.createElement("li");
         messages.appendChild(msg);
@@ -38,27 +61,29 @@
       form.addEventListener("submit", async function(e) {
         e.preventDefault();
 
-        prompt.value = prompt.value.trim();
+        const trimmedPromptValue = prompt.value.trim();
 
-        if (!prompt.value) return;
+        if (!trimmedPromptValue) return;
 
         submit.setAttribute("disabled", "");
 
-        appendMessage().innerText = prompt.value;
+        appendMessage().innerText = trimmedPromptValue;
 
         const params = new URLSearchParams({
           provider: provider.value,
-          prompt: prompt.value,
+          prompt: trimmedPromptValue,
         });
 
         if (lastMessageId)
           params.set("pmid", lastMessageId);
 
         prompt.value = "";
+        updatePromptArea();
 
         const res = await fetch(`${location.origin}/api/ask?${params}`);
 
-        lastMessageId = res.headers.get("msg-id");
+        if (res.status === 200)
+          lastMessageId = res.headers.get("msg-id");
 
         const msg = appendMessage();
         const stream = res.body.pipeThrough(new TextDecoderStream());

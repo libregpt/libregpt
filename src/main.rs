@@ -36,6 +36,7 @@ async fn handle_request(providers: Arc<provider::Map>, req: Request<Body>) -> Re
   match req.uri().path() {
     "/" => routes::root(),
     "/api/ask" => routes::ask(providers, req).await,
+    "/main.css" => Response::new(Body::from(include_str!("../static/main.css"))),
     _ => routes::default(),
   }
 }
