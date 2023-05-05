@@ -1,6 +1,8 @@
 [package]
 name = "libregpt"
+description = "A GPT front-end built for privacy."
 version = "0.1.0"
+repository = "https://github.com/libregpt/libregpt"
 edition = "2021"
 
 [dependencies]
