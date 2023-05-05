@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use hyper::{Body, header, Request, Response, StatusCode};
+use hyper::{header, Body, Request, Response, StatusCode};
 use tracing::error;
 use url::form_urlencoded;
 
@@ -50,8 +50,8 @@ pub async fn ask(providers: Arc<provider::Map>, req: Request<Body>) -> Response<
 
   match provider.ask(prompt, state).await {
     Ok((msg_id, body)) => {
-      let mut builder = Response::builder()
-        .header(header::CONTENT_TYPE, "application/octet-stream");
+      let mut builder =
+        Response::builder().header(header::CONTENT_TYPE, "application/octet-stream");
 
       if let Some(msg_id) = msg_id {
         builder = builder.header("msg-id", msg_id);

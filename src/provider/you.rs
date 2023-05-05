@@ -2,12 +2,13 @@ use std::borrow::Cow;
 use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 use std::pin::Pin;
 use std::task::{Context, Poll};
+
 use async_trait::async_trait;
 use boring::ssl::{SslConnector, SslMethod, SslVersion};
 use futures_core::Stream;
-use hyper::{Body, body, Client, header, Method, Request};
 use hyper::body::HttpBody;
 use hyper::client::HttpConnector;
+use hyper::{body, header, Body, Client, Method, Request};
 use hyper_boring::HttpsConnector;
 use pin_project::pin_project;
 use serde::Deserialize;
@@ -68,11 +69,19 @@ impl Provider {
     builder.enable_ocsp_stapling();
     builder.enable_signed_cert_timestamps();
     builder.set_alpn_protos(b"\x02h2\x08http/1.1").unwrap();
-    builder.set_cipher_list(&CONNECTOR_CIPHER_LIST.join(":")).unwrap();
+    builder
+      .set_cipher_list(&CONNECTOR_CIPHER_LIST.join(":"))
+      .unwrap();
     builder.set_grease_enabled(true);
-    builder.set_max_proto_version(Some(SslVersion::TLS1_3)).unwrap();
-    builder.set_min_proto_version(Some(SslVersion::TLS1_2)).unwrap();
-    builder.set_sigalgs_list(&CONNECTOR_SIGNATURE_ALGORITHMS.join(":")).unwrap();
+    builder
+      .set_max_proto_version(Some(SslVersion::TLS1_3))
+      .unwrap();
+    builder
+      .set_min_proto_version(Some(SslVersion::TLS1_2))
+      .unwrap();
+    builder
+      .set_sigalgs_list(&CONNECTOR_SIGNATURE_ALGORITHMS.join(":"))
+      .unwrap();
 
     let connector = HttpsConnector::with_connector(connector, builder).unwrap();
     let client = Client::builder().build(connector);
@@ -83,7 +92,11 @@ impl Provider {
 
 #[async_trait]
 impl super::Provider for Provider {
-  async fn ask<'a>(&self, prompt: &str, state: Option<Cow<'a, str>>) -> anyhow::Result<(Option<String>, Body)> {
+  async fn ask<'a>(
+    &self,
+    prompt: &str,
+    state: Option<Cow<'a, str>>,
+  ) -> anyhow::Result<(Option<String>, Body)> {
     let mut url = Url::parse("https://you.com/api/streamingSearch").unwrap();
 
     {
@@ -94,7 +107,10 @@ impl super::Provider for Provider {
       query.append_pair("safeSearch", "Moderate");
       query.append_pair("onShoppingPage", "false");
       query.append_pair("mkt", "");
-      query.append_pair("responseFilter", "WebPages,Translations,TimeZone,Computation,RelatedSearches");
+      query.append_pair(
+        "responseFilter",
+        "WebPages,Translations,TimeZone,Computation,RelatedSearches",
+      );
       query.append_pair("domain", "youchat");
       query.append_pair("chat", state.as_ref().map_or("[]", |chat| chat.as_ref()));
     }
@@ -156,14 +172,16 @@ impl Stream for BodyStream {
   type Item = Result<body::Bytes, IoError>;
 
   fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-    self.project().body.poll_data(cx).map_err(|err| IoError::new(IoErrorKind::Other, err))
+    self
+      .project()
+      .body
+      .poll_data(cx)
+      .map_err(|err| IoError::new(IoErrorKind::Other, err))
   }
 }
 
 impl From<Body> for BodyStream {
   fn from(body: Body) -> Self {
-    Self {
-      body,
-    }
+    Self { body }
   }
 }
