@@ -20,14 +20,14 @@ pub async fn ask(providers: Arc<provider::Map>, req: Request<Body>) -> Response<
 
   let mut query = form_urlencoded::parse(query.as_bytes());
   let mut provider_name = None;
-  let mut parent_msg_id = None;
   let mut prompt = None;
+  let mut state = None;
 
   while let Some((key, value)) = query.next() {
     match key.as_ref() {
       "provider" => provider_name = Some(value),
-      "pmid" => parent_msg_id = Some(value),
       "prompt" => prompt = Some(value),
+      "state" => state = Some(value),
       _ => {}
     }
   }
@@ -48,12 +48,17 @@ pub async fn ask(providers: Arc<provider::Map>, req: Request<Body>) -> Response<
     return bad_request("invalid provider param");
   };
 
-  match provider.ask(prompt, parent_msg_id).await {
-    Ok((msg_id, body)) => Response::builder()
-      .header(header::CONTENT_TYPE, "application/octet-stream")
-      .header("msg-id", msg_id)
-      .body(body)
-      .unwrap(),
+  match provider.ask(prompt, state).await {
+    Ok((msg_id, body)) => {
+      let mut builder = Response::builder()
+        .header(header::CONTENT_TYPE, "application/octet-stream");
+
+      if let Some(msg_id) = msg_id {
+        builder = builder.header("msg-id", msg_id);
+      }
+
+      builder.body(body).unwrap()
+    }
     Err(err) => {
       error!("failed to ask to provider {provider_name}: {err}");
       Response::builder()

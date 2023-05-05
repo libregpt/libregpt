@@ -20,6 +20,7 @@
         <div>
           <select id="provider">
             <option value="bai">BAI (gpt-3.5)</option>
+            <option value="you">You</option>
           </select>
         </div>
       </form>
@@ -68,6 +69,9 @@
         submit.setAttribute("disabled", "");
         provider.setAttribute("disabled", "");
 
+        prompt.value = "";
+        updatePromptArea();
+
         appendMessage().innerText = trimmedPromptValue;
         messages.scrollTop = messages.scrollHeight;
 
@@ -76,16 +80,35 @@
           prompt: trimmedPromptValue,
         });
 
-        if (lastMessageId)
-          params.set("pmid", lastMessageId);
+        switch (provider.value) {
+          case "bai":
+            if (lastMessageId)
+              params.set("state", lastMessageId);
+            break;
+          case "you":
+            const messageCount = messages.children.length - 1;
 
-        prompt.value = "";
-        updatePromptArea();
+            if (messageCount !== 0) {
+              const chat = [];
+
+              for (let i = 0; i < messages.children.length - 1; i++) {
+                chat.push({
+                  question: messages.children[i].innerText,
+                  answer: messages.children[i+1].innerText,
+                });
+              }
+
+              params.set("state", JSON.stringify(chat));
+            }
+            break;
+        }
 
         const res = await fetch(`${location.origin}/api/ask?${params}`);
 
-        if (res.status === 200)
-          lastMessageId = res.headers.get("msg-id");
+        if (res.status === 200) {
+          const msgId = res.headers.get("msg-id");
+          if (msgId) lastMessageId = msgId;
+        }
 
         const msg = appendMessage();
         const stream = res.body.pipeThrough(new TextDecoderStream());

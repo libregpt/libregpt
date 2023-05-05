@@ -45,9 +45,9 @@ impl super::Provider for Provider {
   async fn ask<'a>(
     &self,
     prompt: &str,
-    parent_msg_id: Option<Cow<'a, str>>,
-  ) -> anyhow::Result<(String, Body)> {
-    let body = if let Some(parent_msg_id) = parent_msg_id {
+    state: Option<Cow<'a, str>>,
+  ) -> anyhow::Result<(Option<String>, Body)> {
+    let body = if let Some(parent_msg_id) = state {
       json!({
         "prompt": prompt,
         "options": {
@@ -104,6 +104,6 @@ impl super::Provider for Provider {
 
     let msg_id = msg_id_rx.await.context("failed to receive msg id")?;
 
-    Ok((msg_id, rx))
+    Ok((Some(msg_id), rx))
   }
 }
