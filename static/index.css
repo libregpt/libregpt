@@ -111,6 +111,10 @@ body {
     --gap: 1rem;
   }
 
+  #sidebar {
+    display: none;
+  }
+
   #messages, #form {
     width: 100%;
   }
