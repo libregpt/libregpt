@@ -28,6 +28,14 @@ cargo install --git https://github.com/libregpt/libregpt
 libregpt
 ```
 
+### Docker
+```shell
+git clone https://github.com/libregpt/libregpt
+cd libregpt
+docker build -t libregpt .
+docker run -d --name libregpt -p 80:80 libregpt
+```
+
 ## Contributing
 
 Contributions are always welcome!
