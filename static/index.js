@@ -1,9 +1,16 @@
 const form = document.getElementById("form");
 const submit = document.getElementById("submit");
+const stop = document.getElementById("stop");
 const provider = document.getElementById("provider");
 const prompt = document.getElementById("prompt");
 const messages = document.getElementById("messages");
 let lastMessageId;
+let controller;
+
+stop.addEventListener("click", () => {
+    controller.abort();
+    resetForm();
+});
 
 provider.addEventListener("change", () => {
     lastMessageId = undefined;
@@ -81,7 +88,10 @@ form.addEventListener("submit", async function(e) {
             break;
     }
 
-    const res = await fetch(`${location.origin}/api/ask?${params}`);
+    controller = new AbortController();
+    const res = await fetch(`${location.origin}/api/ask?${params}`, {
+        signal: controller.signal,
+    });
 
     if (res.status === 200) {
         const msgId = res.headers.get("msg-id");
@@ -91,11 +101,20 @@ form.addEventListener("submit", async function(e) {
     const bubble = appendMessage();
     const stream = res.body.pipeThrough(new TextDecoderStream());
 
+    submit.style.display = "none";
+    stop.style.display = "block";
+
     for await (const chunk of stream) {
         bubble.innerText += chunk;
         messages.scrollTop = messages.scrollHeight;
     }
 
+    resetForm();
+});
+
+function resetForm() {
+    stop.style.display = "none";
+    submit.style.display = "";
     submit.removeAttribute("disabled");
     provider.removeAttribute("disabled");
-});
+}

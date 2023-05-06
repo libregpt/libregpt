@@ -69,6 +69,7 @@ body {
   border: 1px solid lightgray;
   border-radius: 0.75rem;
   background: white;
+  word-wrap: break-word;
 }
 
 #form {
@@ -86,6 +87,10 @@ body {
   resize: none;
   border: none;
   outline: none;
+}
+
+#stop {
+  display: none;
 }
 
 #prompt-and-submit {
