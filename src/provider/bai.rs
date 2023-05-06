@@ -2,18 +2,19 @@ use std::borrow::Cow;
 
 use anyhow::Context;
 use async_trait::async_trait;
-use hyper::body::HttpBody;
 use hyper::client::HttpConnector;
 use hyper::{header, Body, Client, Method, Request};
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 use rand_user_agent::UserAgent;
 use serde::Deserialize;
 use serde_json::json;
+use tokio::io::AsyncBufReadExt;
 use tokio::sync::oneshot;
 use tokio::task;
+use tokio_util::io::StreamReader;
 use tracing::error;
 
-const MSG_PREFIX: &str = r#"{"role":"assistant","id":"chatcmpl-"#;
+use crate::util::BodyStream;
 
 #[derive(Deserialize)]
 struct Message {
@@ -71,32 +72,27 @@ impl super::Provider for Provider {
     let mut msg_id_tx = Some(msg_id_tx);
 
     task::spawn(async move {
-      let mut body = res.into_body();
+      let mut reader = StreamReader::new(BodyStream::from(res.into_body()));
+      let mut line = String::with_capacity(1 << 14);
 
-      while let Some(Ok(chunk)) = body.data().await {
-        let chunk = match String::from_utf8(chunk.into()) {
-          Ok(chunk) => chunk,
-          Err(_) => {
-            error!("invalid utf-8 chunk");
-            continue;
-          }
-        };
-
-        for partial_msg in chunk.split(MSG_PREFIX) {
-          if !partial_msg.is_empty() && partial_msg != "\n" {
-            let mut raw_msg = String::with_capacity(MSG_PREFIX.len() + partial_msg.len());
-            raw_msg.push_str(MSG_PREFIX);
-            raw_msg.push_str(partial_msg);
-
-            match serde_json::from_str::<Message>(&raw_msg) {
+      loop {
+        match reader.read_line(&mut line).await {
+          Ok(0) => break,
+          Ok(_) => {
+            match serde_json::from_str::<Message>(&line) {
               Ok(msg) => {
                 if let Some(msg_id_tx) = msg_id_tx.take() {
                   drop(msg_id_tx.send(msg.id));
                 }
                 drop(tx.send_data(msg.delta.into()).await);
               }
-              Err(err) => error!("failed to deserialize chunk: {err}"),
+              Err(err) => error!("failed to deserialize line: {err}"),
             }
+            line.clear();
+          }
+          Err(err) => {
+            error!("failed to read line: {err}");
+            break;
           }
         }
       }

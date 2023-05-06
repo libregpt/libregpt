@@ -1,16 +1,10 @@
 use std::borrow::Cow;
-use std::io::{Error as IoError, ErrorKind as IoErrorKind};
-use std::pin::Pin;
-use std::task::{Context, Poll};
 
 use async_trait::async_trait;
 use boring::ssl::{SslConnector, SslMethod, SslVersion};
-use futures_core::Stream;
-use hyper::body::HttpBody;
 use hyper::client::HttpConnector;
-use hyper::{body, header, Body, Client, Method, Request};
+use hyper::{header, Body, Client, Method, Request};
 use hyper_boring::HttpsConnector;
-use pin_project::pin_project;
 use serde::Deserialize;
 use tokio::io::AsyncBufReadExt;
 use tokio::task;
@@ -18,6 +12,8 @@ use tokio_util::io::StreamReader;
 use tracing::error;
 use url::Url;
 use uuid::Uuid;
+
+use crate::util::BodyStream;
 
 const CONNECTOR_CIPHER_LIST: &[&str] = &[
   "TLS_AES_128_GCM_SHA256",
@@ -159,29 +155,5 @@ impl super::Provider for Provider {
     });
 
     Ok((None, rx))
-  }
-}
-
-#[pin_project]
-struct BodyStream {
-  #[pin]
-  body: Body,
-}
-
-impl Stream for BodyStream {
-  type Item = Result<body::Bytes, IoError>;
-
-  fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-    self
-      .project()
-      .body
-      .poll_data(cx)
-      .map_err(|err| IoError::new(IoErrorKind::Other, err))
-  }
-}
-
-impl From<Body> for BodyStream {
-  fn from(body: Body) -> Self {
-    Self { body }
   }
 }
