@@ -43,6 +43,7 @@ async fn handle_request(providers: Arc<provider::Map>, req: Request<Body>) -> Re
     "/" => routes::root(),
     "/api/ask" => routes::ask(providers, req).await,
     "/index.css" => Response::new(Body::from(include_str!("../static/index.css"))),
+    "/index.js" => Response::new(Body::from(include_str!("../static/index.js"))),
     _ => routes::default(),
   }
 }
