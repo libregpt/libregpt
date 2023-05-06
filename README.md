@@ -2,6 +2,9 @@
 
 A GPT front-end built for privacy.
 
+> **Note**
+> This project is under heavy development.
+
 ### Why?
 
 It's almost impossible to use services that give access to GPT models without giving away your data.
