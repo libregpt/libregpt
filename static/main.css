@@ -9,10 +9,26 @@ body {
   overflow: hidden;
   display: flex;
   gap: var(--gap);
+  font-family: monospace;
 }
 
-#conversations {
-  display: none;
+#sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+#sidebar-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-button {
+  padding: 0.5rem 0.625rem;
+  border: 1px solid lightgray;
+  border-radius: 0.625rem;
+  background: white;
 }
 
 #chat {
@@ -24,7 +40,7 @@ body {
   gap: var(--gap);
 }
 
-#conversations, #chat {
+#sidebar, #chat {
   background: #f4f4f4;
   border-radius: 1rem;
   padding: 1.5rem;
@@ -52,6 +68,7 @@ body {
   padding: 0.5rem 0.75rem;
   border: 1px solid lightgray;
   border-radius: 0.75rem;
+  background: white;
 }
 
 #form {
@@ -81,7 +98,6 @@ body {
 
 #provider {
   padding: 0.5rem 0.625rem;
-  border: none;
   border-radius: 0.625rem;
 }
 
