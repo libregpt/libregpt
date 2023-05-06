@@ -55,8 +55,15 @@
 
       function appendMessage() {
         const msg = document.createElement("div");
+        msg.classList.add("message");
+
+        const bubble = document.createElement("div");
+        bubble.classList.add("message-bubble");
+
+        msg.appendChild(bubble);
         messages.appendChild(msg);
-        return msg;
+
+        return bubble;
       }
 
       form.addEventListener("submit", async function(e) {
@@ -110,11 +117,11 @@
           if (msgId) lastMessageId = msgId;
         }
 
-        const msg = appendMessage();
+        const bubble = appendMessage();
         const stream = res.body.pipeThrough(new TextDecoderStream());
 
         for await (const chunk of stream) {
-          msg.innerText += chunk;
+          bubble.innerText += chunk;
           messages.scrollTop = messages.scrollHeight;
         }
 
