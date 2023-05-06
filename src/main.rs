@@ -2,6 +2,7 @@ mod provider;
 mod routes;
 
 use std::convert::Infallible;
+use std::env;
 use std::sync::Arc;
 
 use hyper::{service, Body, Request, Response, Server};
@@ -11,7 +12,12 @@ use tracing::{error, info};
 async fn main() {
   tracing_subscriber::fmt::init();
 
-  let addr = "0.0.0.0:80".parse().unwrap();
+  let port = match env::var("PORT").map_or(Ok(80), |p| p.parse()) {
+    Ok(port) => port,
+    Err(err) => return error!("invalid port: {err}"),
+  };
+
+  let addr = ([0, 0, 0, 0], port).into();
   let providers = Arc::new(provider::s());
   let make_service = service::make_service_fn(|_| {
     let providers = providers.clone();
