@@ -42,7 +42,8 @@ impl super::Provider for Provider {
     content_type.push_str("multipart/form-data; boundary=");
     content_type.push_str(&boundary);
 
-    let chat_len = state.as_ref().map_or(2, |chat| chat.len() + 1) + 28 + prompt.len();
+    let prompt = serde_json::to_string(prompt)?;
+    let chat_len = state.as_ref().map_or(2, |chat| chat.len() + 1) + 26 + prompt.len();
     let mut body = String::with_capacity(2 + boundary.len() * 3 + 61 + 54 + chat_len + 4 + 4);
 
     body.push_str("--");
@@ -58,9 +59,9 @@ impl super::Provider for Provider {
       body.push('[');
     };
 
-    body.push_str("{\"role\":\"user\",\"content\":\"");
-    body.push_str(prompt);
-    body.push_str("\"}]\r\n--");
+    body.push_str("{\"role\":\"user\",\"content\":");
+    body.push_str(&prompt);
+    body.push_str("}]\r\n--");
     body.push_str(&boundary);
     body.push_str("--\r\n");
 
