@@ -66,17 +66,33 @@ form.addEventListener("submit", async function(e) {
   });
 
   switch (provider.value) {
-    case "bai":
+    case "bai": {
       if (lastMessageId)
         params.set("state", lastMessageId);
-      break;
-    case "you":
+    } break;
+    case "deepai": {
       const messageCount = messages.children.length - 1;
 
-      if (messageCount !== 0) {
+      if (messageCount) {
         const chat = [];
 
-        for (let i = 0; i < messages.children.length - 1; i++) {
+        for (let i = 0; i < messageCount; i++) {
+          chat.push({
+            role: i % 2 === 0 ? "user" : "assistant",
+            content: messages.children[i].innerText,
+          });
+        }
+
+        params.set("state", JSON.stringify(chat));
+      }
+    } break;
+    case "you": {
+      const messageCount = messages.children.length - 1;
+
+      if (messageCount) {
+        const chat = [];
+
+        for (let i = 0; i < messageCount - 1; i++) {
           chat.push({
             question: messages.children[i].innerText,
             answer: messages.children[i+1].innerText,
@@ -85,7 +101,7 @@ form.addEventListener("submit", async function(e) {
 
         params.set("state", JSON.stringify(chat));
       }
-      break;
+    } break;
   }
 
   controller = new AbortController();

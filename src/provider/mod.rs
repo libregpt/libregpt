@@ -1,4 +1,5 @@
 mod bai;
+mod deepai;
 mod you;
 
 use std::borrow::Cow;
@@ -22,6 +23,7 @@ pub fn s() -> Map {
   let mut providers = HashMap::new();
 
   providers.insert("bai", Box::new(bai::Provider::new()) as Box<dyn Provider>);
+  providers.insert("deepai", Box::new(deepai::Provider::new()) as Box<dyn Provider>);
   providers.insert("you", Box::new(you::Provider::new()) as Box<dyn Provider>);
 
   providers

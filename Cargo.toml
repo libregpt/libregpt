@@ -11,10 +11,14 @@ anyhow = "1"
 async-trait = "0.1"
 boring = "2"
 futures-core = "0.3"
+hex = "0.4"
 hyper = { version = "0.14", features = ["client", "http1", "http2", "runtime", "server"] }
 hyper-boring = "2"
 hyper-rustls = { version = "0.24", features = ["http2"] }
+itoa = "1"
+md5 = "0.7"
 pin-project = "1"
+rand = "0.8"
 rand_user_agent = "0.1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

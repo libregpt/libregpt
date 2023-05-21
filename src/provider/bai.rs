@@ -2,9 +2,9 @@ use std::borrow::Cow;
 
 use anyhow::Context;
 use async_trait::async_trait;
-use hyper::client::HttpConnector;
 use hyper::{header, Body, Client, Method, Request};
-use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
+use hyper::client::HttpConnector;
+use hyper_rustls::HttpsConnector;
 use rand_user_agent::UserAgent;
 use serde::Deserialize;
 use serde_json::json;
@@ -14,7 +14,7 @@ use tokio::task;
 use tokio_util::io::StreamReader;
 use tracing::error;
 
-use crate::util::BodyStream;
+use crate::util::{BodyStream, new_rustls_connector};
 
 #[derive(Deserialize)]
 struct Message {
@@ -28,13 +28,7 @@ pub struct Provider {
 
 impl Provider {
   pub fn new() -> Self {
-    let connector = HttpsConnectorBuilder::new()
-      .with_native_roots()
-      .https_only()
-      .enable_http1()
-      .enable_http2()
-      .build();
-
+    let connector = new_rustls_connector();
     let client = Client::builder().build(connector);
 
     Self { client }
