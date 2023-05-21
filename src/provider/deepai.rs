@@ -1,10 +1,12 @@
 use std::borrow::Cow;
+
 use async_trait::async_trait;
-use hyper::{Body, Client, header, Method, Request};
 use hyper::client::HttpConnector;
+use hyper::{header, Body, Client, Method, Request};
 use hyper_rustls::HttpsConnector;
 use rand::Rng;
 use rand_user_agent::UserAgent;
+
 use crate::util::new_rustls_connector;
 
 pub struct Provider {
@@ -22,10 +24,19 @@ impl Provider {
 
 #[async_trait]
 impl super::Provider for Provider {
-  async fn ask<'a>(&self, prompt: &str, state: Option<Cow<'a, str>>) -> anyhow::Result<(Option<String>, Body)> {
+  async fn ask<'a>(
+    &self,
+    prompt: &str,
+    state: Option<Cow<'a, str>>,
+  ) -> anyhow::Result<(Option<String>, Body)> {
     let user_agent = UserAgent::random().to_string();
     let api_key = generate_api_key(&user_agent);
-    let boundary = String::from_iter(rand::thread_rng().sample_iter(rand::distributions::Alphanumeric).map(|b| b as char).take(6));
+    let boundary = String::from_iter(
+      rand::thread_rng()
+        .sample_iter(rand::distributions::Alphanumeric)
+        .map(|b| b as char)
+        .take(6),
+    );
 
     let mut content_type = String::with_capacity(30 + boundary.len());
     content_type.push_str("multipart/form-data; boundary=");
@@ -41,7 +52,7 @@ impl super::Provider for Provider {
     body.push_str("Content-Disposition: form-data; name=\"chatHistory\"\r\n\r\n");
 
     if let Some(chat) = state {
-      body.push_str(&chat[..chat.len()-1]);
+      body.push_str(&chat[..chat.len() - 1]);
       body.push(',');
     } else {
       body.push('[');

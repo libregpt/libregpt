@@ -2,8 +2,8 @@ use std::borrow::Cow;
 
 use anyhow::Context;
 use async_trait::async_trait;
-use hyper::{header, Body, Client, Method, Request};
 use hyper::client::HttpConnector;
+use hyper::{header, Body, Client, Method, Request};
 use hyper_rustls::HttpsConnector;
 use rand_user_agent::UserAgent;
 use serde::Deserialize;
@@ -14,7 +14,7 @@ use tokio::task;
 use tokio_util::io::StreamReader;
 use tracing::error;
 
-use crate::util::{BodyStream, new_rustls_connector};
+use crate::util::{new_rustls_connector, BodyStream};
 
 #[derive(Deserialize)]
 struct Message {
