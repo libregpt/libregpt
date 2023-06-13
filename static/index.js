@@ -99,7 +99,7 @@ form.addEventListener("submit", async function(e) {
           });
         }
 
-        params.set("state", JSON.stringify(chat));
+        params.set("state", lastMessageId + JSON.stringify(chat));
       }
     } break;
   }

@@ -94,6 +94,10 @@ impl super::Provider for Provider {
     state: Option<Cow<'a, str>>,
   ) -> anyhow::Result<(Option<String>, Body)> {
     let mut url = Url::parse("https://you.com/api/streamingSearch").unwrap();
+    let (chat_id, chat) = state
+      .as_ref()
+      .and_then(|state| if state.len() < 38 { None } else { Some((Cow::Borrowed(&state[..36]), &state[36..])) })
+      .unwrap_or_else(|| (Uuid::new_v4().to_string().into(), "[]"));
 
     {
       let mut query = url.query_pairs_mut();
@@ -107,8 +111,10 @@ impl super::Provider for Provider {
         "responseFilter",
         "WebPages,Translations,TimeZone,Computation,RelatedSearches",
       );
+      query.append_pair("queryTraceId", &chat_id);
       query.append_pair("domain", "youchat");
-      query.append_pair("chat", state.as_ref().map_or("[]", |chat| chat.as_ref()));
+      query.append_pair("chat", chat);
+      query.append_pair("chatId", &chat_id);
     }
 
     let req = Request::builder()
@@ -154,6 +160,6 @@ impl super::Provider for Provider {
       }
     });
 
-    Ok((None, rx))
+    Ok((Some(chat_id.into_owned()), rx))
   }
 }
