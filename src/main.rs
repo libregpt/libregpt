@@ -6,7 +6,7 @@ use std::convert::Infallible;
 use std::env;
 use std::sync::Arc;
 
-use hyper::{service, Body, Request, Response, Server};
+use hyper::{service, Body, Request, Response, Server, header};
 use tracing::{error, info};
 
 #[tokio::main]
@@ -43,8 +43,8 @@ async fn handle_request(providers: Arc<provider::Map>, req: Request<Body>) -> Re
   match req.uri().path() {
     "/" => routes::root(),
     "/api/ask" => routes::ask(providers, req).await,
-    "/index.css" => Response::new(Body::from(include_str!("../static/index.css"))),
-    "/index.js" => Response::new(Body::from(include_str!("../static/index.js"))),
+    "/index.css" => Response::builder().header(header::CONTENT_TYPE, "text/css").body(Body::from(include_str!("../static/index.css"))).unwrap(),
+    "/index.js" => Response::builder().header(header::CONTENT_TYPE, "text/javascript").body(Body::from(include_str!("../static/index.js"))).unwrap(),
     _ => routes::default(),
   }
 }
