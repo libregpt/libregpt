@@ -1,3 +1,14 @@
+import { remark } from "https://esm.sh/remark@14?bundle";
+import remarkRehype from "https://esm.sh/remark-rehype@10?bundle";
+import rehypeHighlight from "https://esm.sh/rehype-highlight@5?bundle";
+import rehypeStringify from "https://esm.sh/rehype-stringify@9?bundle";
+
+const processor = remark()
+  .use(remarkRehype)
+  .data('settings', { fragment: true })
+  .use(rehypeHighlight, { ignoreMissing: true, detect: true })
+  .use(rehypeStringify);
+
 const form = document.getElementById("form");
 const submit = document.getElementById("submit");
 const stop = document.getElementById("stop");
@@ -57,7 +68,7 @@ form.addEventListener("submit", async function(e) {
   prompt.value = "";
   updatePromptArea();
 
-  appendMessage().innerText = trimmedPromptValue;
+  appendMessage().innerHTML = await processor.process(trimmedPromptValue);
   messages.scrollTop = messages.scrollHeight;
 
   const params = new URLSearchParams({
@@ -120,13 +131,33 @@ form.addEventListener("submit", async function(e) {
   submit.style.display = "none";
   stop.style.display = "block";
 
+  let text = "";
+
   for await (const chunk of stream) {
-    bubble.innerText += chunk;
+    text += chunk;
+
+    bubble.innerHTML = (await processor.process(text))
+      .value
+      .split("\n")
+      .map(line => reindent(line, 4, 2))
+      .join("\n");
+
     messages.scrollTop = messages.scrollHeight;
   }
 
   resetForm();
 });
+
+function reindent(line, initial, target) {
+  const spaces = " ".repeat(initial);
+  let i = 0;
+
+  while (line.slice(i, i + initial) === spaces) {
+    i += initial;
+  }
+
+  return " ".repeat(target * (i / initial)) + line.slice(i);
+}
 
 function resetForm() {
   stop.style.display = "none";
