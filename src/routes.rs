@@ -9,7 +9,7 @@ use crate::provider;
 pub fn root() -> Response<Body> {
   Response::builder()
     .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
-    .body(Body::from(include_str!("../static/index.html")))
+    .body(Body::from(include_str!("../static/index.min.html")))
     .unwrap()
 }
 

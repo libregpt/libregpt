@@ -43,8 +43,8 @@ async fn handle_request(providers: Arc<provider::Map>, req: Request<Body>) -> Re
   match req.uri().path() {
     "/" => routes::root(),
     "/api/ask" => routes::ask(providers, req).await,
-    "/index.css" => Response::builder().header(header::CONTENT_TYPE, "text/css").body(Body::from(include_str!("../static/index.css"))).unwrap(),
-    "/index.js" => Response::builder().header(header::CONTENT_TYPE, "text/javascript").body(Body::from(include_str!("../static/index.js"))).unwrap(),
+    "/index.min.css" => Response::builder().header(header::CONTENT_TYPE, "text/css").body(Body::from(include_str!("../static/index.min.css"))).unwrap(),
+    "/index.min.js" => Response::builder().header(header::CONTENT_TYPE, "text/javascript").body(Body::from(include_str!("../static/index.min.js"))).unwrap(),
     _ => routes::default(),
   }
 }
