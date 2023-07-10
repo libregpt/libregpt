@@ -1,3 +1,5 @@
+@import url("https://fontlay.com/css2?family=Inter&display=swap");
+
 :root {
   --gap: 1.5rem;
 }
@@ -9,7 +11,8 @@ body {
   overflow: hidden;
   display: flex;
   gap: var(--gap);
-  font-family: monospace;
+  font-family: "Inter", sans-serif;
+  font-size: smaller;
 }
 
 #sidebar {
@@ -98,10 +101,17 @@ code.hljs {
   resize: none;
   border: none;
   outline: none;
+  font-family: inherit;
+  font-size: inherit;
 }
 
 #stop {
   display: none;
+}
+
+#submit, #stop {
+  font-family: inherit;
+  font-size: inherit;
 }
 
 #prompt-and-submit {
@@ -115,6 +125,8 @@ code.hljs {
 #provider {
   padding: 0.5rem 0.625rem;
   border-radius: 0.625rem;
+  font-family: inherit;
+  font-size: inherit;
 }
 
 #prompt-and-submit, #provider {
