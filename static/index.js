@@ -1,13 +1,13 @@
 import { remark } from "https://esm.sh/remark@14?bundle";
 import remarkRehype from "https://esm.sh/remark-rehype@10?bundle";
 import rehypeHighlight from "https://esm.sh/rehype-highlight@5?bundle";
-import rehypeStringify from "https://esm.sh/rehype-stringify@9?bundle";
+import rehypeDomStringify from "https://esm.sh/rehype-dom-stringify@3?bundle";
 
 const processor = remark()
   .use(remarkRehype)
   .data('settings', { fragment: true })
   .use(rehypeHighlight, { ignoreMissing: true, detect: true })
-  .use(rehypeStringify);
+  .use(rehypeDomStringify);
 
 const form = document.getElementById("form");
 const submit = document.getElementById("submit");
