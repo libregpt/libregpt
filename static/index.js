@@ -139,30 +139,15 @@ form.addEventListener("submit", async function(e) {
 
       text += char;
 
-      bubble.innerHTML = (await processor.process(text))
-        .value
-        .split("\n")
-        .map(line => reindent(line, 4, 2))
-        .join("\n");
-
+      bubble.innerHTML = (await processor.process(text)).value;
       messages.scrollTop = messages.scrollHeight;
+
       await new Promise(resolve => setTimeout(resolve, 10));
     }
   }
 
   resetForm();
 });
-
-function reindent(line, initial, target) {
-  const spaces = " ".repeat(initial);
-  let i = 0;
-
-  while (line.slice(i, i + initial) === spaces) {
-    i += initial;
-  }
-
-  return " ".repeat(target * (i / initial)) + line.slice(i);
-}
 
 function resetForm() {
   stop.style.display = "none";
