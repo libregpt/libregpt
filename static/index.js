@@ -134,15 +134,20 @@ form.addEventListener("submit", async function(e) {
   let text = "";
 
   for await (const chunk of stream) {
-    text += chunk;
+    for (const char of chunk) {
+      if (controller.signal.aborted) break;
 
-    bubble.innerHTML = (await processor.process(text))
-      .value
-      .split("\n")
-      .map(line => reindent(line, 4, 2))
-      .join("\n");
+      text += char;
 
-    messages.scrollTop = messages.scrollHeight;
+      bubble.innerHTML = (await processor.process(text))
+        .value
+        .split("\n")
+        .map(line => reindent(line, 4, 2))
+        .join("\n");
+
+      messages.scrollTop = messages.scrollHeight;
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
   }
 
   resetForm();
