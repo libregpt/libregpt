@@ -30,11 +30,11 @@ wasm-logger = "0.2"
 anyhow = "1"
 async-trait = "0.1"
 axum = "0.6"
-boring = "3"
+boring = "2"
 futures = "0.3"
 hex = "0.4"
 hyper = { version = "0.14", features = ["client", "http1", "http2"] }
-hyper-boring = "3"
+hyper-boring = "2"
 hyper-rustls = { version = "0.24", features = ["http2"] }
 itoa = "1"
 md5 = "0.7"
