@@ -2,7 +2,7 @@ use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use futures_core::Stream;
+use futures::Stream;
 use hyper::body::{self, Body, HttpBody};
 use hyper::client::HttpConnector;
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};

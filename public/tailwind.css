@@ -1,0 +1,42 @@
+@import url("https://fontlay.com/css2?family=Inter&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  font-family: "Inter", sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-size: revert;
+  font-weight: revert;
+}
+
+ul {
+  @apply list-disc;
+}
+
+ol {
+  @apply list-decimal;
+}
+
+ul, ol {
+  @apply pl-8;
+}
+
+pre {
+  @apply px-3 py-2 overflow-x-auto lg:px-3.5 lg:py-3;
+}
+
+code {
+  font-family: monospace;
+}
+
+code.inline {
+  @apply px-1.5 py-1;
+}
+
+pre, code.inline {
+  @apply bg-[#EFEFEF] rounded-lg;
+}

@@ -1,19 +1,71 @@
+use std::convert::Infallible;
 use std::sync::Arc;
-
-use hyper::{header, Body, Request, Response, StatusCode};
+use axum::body::StreamBody;
+use axum::extract::{Query, State};
+use axum::http::{header, StatusCode};
+use axum::response::{IntoResponse, Response};
+use futures::stream::{self, StreamExt};
+use hyper::Body;
+use serde::Deserialize;
 use tracing::error;
-use url::form_urlencoded;
-
+use yew::ServerRenderer;
 use crate::provider;
 
-pub fn root() -> Response<Body> {
-  Response::builder()
-    .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
-    .body(Body::from(include_str!("../static/index.min.html")))
-    .unwrap()
+pub async fn render(State((index_html_before, index_html_after)): State<(String, String)>) -> impl IntoResponse {
+  let renderer = ServerRenderer::<libregpt::App>::new();
+
+  StreamBody::new(
+    stream::once(async move { index_html_before })
+      .chain(renderer.render_stream())
+      .chain(stream::once(async move { index_html_after }))
+      .map(Result::<_, Infallible>::Ok),
+  )
 }
 
-pub async fn ask(providers: Arc<provider::Map>, req: Request<Body>) -> Response<Body> {
+pub async fn default() -> (StatusCode, &'static str) {
+  (StatusCode::NOT_FOUND, "nothing to see here")
+}
+
+#[derive(Deserialize)]
+pub struct AskParams {
+  provider: Box<str>,
+  prompt: Box<str>,
+  state: Option<Box<str>>,
+}
+
+pub async fn ask(
+  State(providers): State<Arc<provider::Map>>,
+  Query(params): Query<AskParams>,
+) -> Response<Body> {
+  let Some(provider) = providers.get(params.provider.as_ref()) else {
+    return Response::builder()
+      .status(StatusCode::BAD_REQUEST)
+      .body(Body::from("invalid provider param"))
+      .unwrap();
+  };
+
+  match provider.ask(&params.prompt, params.state.as_deref()).await {
+    Ok((msg_id, body)) => {
+      let mut builder =
+        Response::builder().header(header::CONTENT_TYPE, "application/octet-stream");
+
+      if let Some(msg_id) = msg_id {
+        builder = builder.header("msg-id", msg_id);
+      }
+
+      builder.body(body).unwrap()
+    }
+    Err(err) => {
+      error!("failed to ask to provider {}: {err}", params.provider);
+      Response::builder()
+        .status(StatusCode::INTERNAL_SERVER_ERROR)
+        .body(Body::from("unexpected error"))
+        .unwrap()
+    }
+  }
+}
+
+/*pub async fn ask(providers: Arc<provider::Map>, req: Request<Body>) -> Response<BoxBody> {
   let Some(query) = req.uri().query() else {
     return bad_request("empty query");
   };
@@ -67,18 +119,4 @@ pub async fn ask(providers: Arc<provider::Map>, req: Request<Body>) -> Response<
         .unwrap()
     }
   }
-}
-
-pub fn default() -> Response<Body> {
-  Response::builder()
-    .status(StatusCode::NOT_FOUND)
-    .body(Body::from("nothing to see here"))
-    .unwrap()
-}
-
-fn bad_request(body: &'static str) -> Response<Body> {
-  Response::builder()
-    .status(StatusCode::BAD_REQUEST)
-    .body(Body::from(body))
-    .unwrap()
-}
+}*/

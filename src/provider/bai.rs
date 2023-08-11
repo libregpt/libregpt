@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use anyhow::Context;
 use async_trait::async_trait;
 use hyper::client::HttpConnector;
@@ -40,7 +38,7 @@ impl super::Provider for Provider {
   async fn ask<'a>(
     &self,
     prompt: &str,
-    state: Option<Cow<'a, str>>,
+    state: Option<&str>,
   ) -> anyhow::Result<(Option<String>, Body)> {
     let body = if let Some(parent_msg_id) = state {
       json!({
@@ -55,7 +53,7 @@ impl super::Provider for Provider {
 
     let req = Request::builder()
       .method(Method::POST)
-      .uri("https://chatbot.theb.ai/api/chat-process")
+      .uri("https://beta.theb.ai/api/chat-process")
       .header(header::CONTENT_TYPE, "application/json")
       .header(header::USER_AGENT, UserAgent::random().to_string())
       .body(Body::from(serde_json::to_string(&body)?))?;

@@ -1,16 +1,28 @@
+#[cfg(feature = "ssr")]
 mod provider;
+#[cfg(feature = "ssr")]
 mod routes;
+#[cfg(feature = "ssr")]
 mod util;
 
-use std::convert::Infallible;
-use std::env;
-use std::sync::Arc;
+#[cfg(feature = "hydration")]
+fn main() {
+  wasm_logger::init(wasm_logger::Config::new(log::Level::Trace));
+  yew::Renderer::<libregpt::App>::new().hydrate();
+}
 
-use hyper::{service, Body, Request, Response, Server, header};
-use tracing::{error, info};
-
+#[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() {
+  use std::{env, fs};
+  use std::sync::Arc;
+  use axum::{Router, routing, Server};
+  use axum::handler::HandlerWithoutStateExt;
+  use tower::ServiceBuilder;
+  use tower_http::compression::CompressionLayer;
+  use tower_http::services::ServeDir;
+  use tracing::{error, info};
+
   tracing_subscriber::fmt::init();
 
   let port = match env::var("PORT").map_or(Ok(80), |p| p.parse()) {
@@ -18,33 +30,36 @@ async fn main() {
     Err(err) => return error!("invalid port: {err}"),
   };
 
-  let addr = ([0, 0, 0, 0], port).into();
-  let providers = Arc::new(provider::s());
-  let make_service = service::make_service_fn(|_| {
-    let providers = providers.clone();
-    async move {
-      Ok::<_, Infallible>(service::service_fn(move |req| {
-        let providers = providers.clone();
-        async move { Ok::<_, Infallible>(handle_request(providers, req).await) }
-      }))
-    }
-  });
+  let index_html = fs::read_to_string("dist/index.html").expect("failed to read index.html");
+  let (index_html_before, index_html_after) = index_html.split_once("<body>").unwrap();
 
-  let server = Server::bind(&addr).serve(make_service);
+  let mut index_html_before = index_html_before.to_owned();
+  index_html_before.push_str("<body>");
+
+  let serve_dist_dir = ServiceBuilder::new().layer(CompressionLayer::new()).service(
+    ServeDir::new("dist")
+      .append_index_html_on_directories(false)
+      .not_found_service(routes::default.into_service()),
+  );
+
+  let render = routing::get(routes::render)
+    .with_state((index_html_before, index_html_after.to_owned()));
+
+  let ask = routing::get(routes::ask)
+    .with_state(Arc::new(provider::s()));
+
+  let router = Router::new()
+    .route("/", render)
+    .nest_service("/pkg", serve_dist_dir)
+    .route("/api/ask", ask)
+    .fallback(routes::default);
+
+  let addr = ([0, 0, 0, 0], port).into();
+  let server = Server::bind(&addr).serve(router.into_make_service());
 
   info!("listening on {addr}");
 
   if let Err(err) = server.await {
     error!("server died: {err}");
-  }
-}
-
-async fn handle_request(providers: Arc<provider::Map>, req: Request<Body>) -> Response<Body> {
-  match req.uri().path() {
-    "/" => routes::root(),
-    "/api/ask" => routes::ask(providers, req).await,
-    "/index.min.css" => Response::builder().header(header::CONTENT_TYPE, "text/css").body(Body::from(include_str!("../static/index.min.css"))).unwrap(),
-    "/index.min.js" => Response::builder().header(header::CONTENT_TYPE, "text/javascript").body(Body::from(include_str!("../static/index.min.js"))).unwrap(),
-    _ => routes::default(),
   }
 }

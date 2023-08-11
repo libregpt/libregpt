@@ -7,29 +7,49 @@ license = "AGPL-3.0"
 edition = "2021"
 
 [dependencies]
+chrono = "0.4"
+futures-util = { version = "0.3", default-features = false }
+gloo-net = { version = "0.3", default-features = false }
+gloo-timers = { version = "0.2", features = ["futures"] }
+gloo-utils = "0.1"
+js-sys = "0.3"
+prose = { git = "https://github.com/libregpt/prose" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+wasm-streams = "0.3"
+web-sys = { version = "0.3", features = ["CssStyleDeclaration", "HtmlElement", "HtmlOptionElement", "HtmlSelectElement", "TextDecoder", "TextDecodeOptions"] }
+yew = "0.20"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+log = "0.4"
+wasm-logger = "0.2"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 anyhow = "1"
 async-trait = "0.1"
-boring = "2"
-futures-core = "0.3"
+axum = "0.6"
+boring = "3"
+futures = "0.3"
 hex = "0.4"
-hyper = { version = "0.14", features = ["client", "http1", "http2", "runtime", "server"] }
-hyper-boring = "2"
+hyper = { version = "0.14", features = ["client", "http1", "http2"] }
+hyper-boring = "3"
 hyper-rustls = { version = "0.24", features = ["http2"] }
 itoa = "1"
 md5 = "0.7"
 pin-project = "1"
 rand = "0.8"
 rand_user_agent = "0.1"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 tokio-util = { version = "0.7", features = ["io"] }
+tower = "0.4"
+tower-http = { version = "0.4", features = ["compression-full", "fs"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
 url = "2"
 uuid = { version = "1", features = ["v4"] }
 
-[build-dependencies]
-css-minify = "0.3"
-minify-html-onepass = "0.11"
-#minify-js = "0.5"
+[features]
+ssr = ["yew/ssr"]
+hydration = ["yew/hydration"]

@@ -2,7 +2,6 @@ mod bai;
 mod deepai;
 mod you;
 
-use std::borrow::Cow;
 use std::collections::HashMap;
 
 use async_trait::async_trait;
@@ -13,7 +12,7 @@ pub trait Provider: Send + Sync {
   async fn ask<'a>(
     &self,
     prompt: &str,
-    state: Option<Cow<'a, str>>,
+    state: Option<&str>,
   ) -> anyhow::Result<(Option<String>, Body)>;
 }
 

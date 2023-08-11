@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use async_trait::async_trait;
 use hyper::client::HttpConnector;
 use hyper::{header, Body, Client, Method, Request};
@@ -27,7 +25,7 @@ impl super::Provider for Provider {
   async fn ask<'a>(
     &self,
     prompt: &str,
-    state: Option<Cow<'a, str>>,
+    state: Option<&str>,
   ) -> anyhow::Result<(Option<String>, Body)> {
     let user_agent = UserAgent::random().to_string();
     let api_key = generate_api_key(&user_agent);
@@ -67,7 +65,7 @@ impl super::Provider for Provider {
 
     let req = Request::builder()
       .method(Method::POST)
-      .uri("https://api.deepai.org/chat_response")
+      .uri("https://api.deepai.org/make_me_a_pizza")
       .header(header::USER_AGENT, user_agent)
       .header("api-key", api_key)
       .header(header::CONTENT_TYPE, content_type)
