@@ -22,4 +22,4 @@ clean:
 fmt:
 	cargo +nightly fmt
 
-.PHONY: build run clean
+.PHONY: build run clean fmt
