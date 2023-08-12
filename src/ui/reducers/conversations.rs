@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::rc::Rc;
-use chrono::{DateTime, Utc};
+use time::OffsetDateTime;
 use yew::Reducible;
 
 #[derive(Clone, PartialEq)]
 pub struct Conversation {
-  pub created_at: DateTime<Utc>,
+  pub created_at: OffsetDateTime,
   pub provider: String,
   pub messages: Vec<String>,
   pub updating_last_msg: bool,
@@ -13,7 +13,7 @@ pub struct Conversation {
 }
 
 impl Conversation {
-  fn new(created_at: DateTime<Utc>, provider: String) -> Self {
+  fn new(created_at: OffsetDateTime, provider: String) -> Self {
     Self {
       created_at,
       provider,
@@ -31,7 +31,7 @@ pub struct Conversations {
 }
 
 impl Conversations {
-  pub fn new(first_conv_name: String, now: DateTime<Utc>, default_provider: String) -> Self {
+  pub fn new(first_conv_name: String, now: OffsetDateTime, default_provider: String) -> Self {
     Self {
       default_provider: default_provider.clone(),
       inner: HashMap::from([(first_conv_name, Conversation::new(now, default_provider))]),
@@ -107,7 +107,7 @@ impl Reducible for Conversations {
 }
 
 pub enum ConversationsAction {
-  CreateConversation(String, DateTime<Utc>),
+  CreateConversation(String, OffsetDateTime),
   PushMessage(Rc<str>, String),
   SetLastMessageId(Rc<str>, String),
   SetProvider(Rc<str>, String),

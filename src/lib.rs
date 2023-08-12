@@ -2,11 +2,11 @@ mod ui;
 
 use std::iter;
 use std::rc::Rc;
-use chrono::Utc;
 use futures_util::StreamExt;
 use gloo_timers::future::TimeoutFuture;
 use gloo_utils::window;
 use serde::Serialize;
+use time::OffsetDateTime;
 use wasm_bindgen::JsCast;
 use wasm_streams::ReadableStream;
 use web_sys::{Event, HtmlElement, HtmlOptionElement, HtmlSelectElement, HtmlTextAreaElement, TextDecodeOptions, TextDecoder};
@@ -55,7 +55,7 @@ pub fn App() -> Html {
   };
 
   let conversations = use_reducer(|| {
-    let now = Utc::now();
+    let now = OffsetDateTime::now_utc();
     let first_conv_name = format_date_time(now);
 
     Conversations::new(first_conv_name, now, PROVIDERS.iter().find(|p| !p.2).unwrap().0.to_owned())
@@ -246,7 +246,7 @@ pub fn App() -> Html {
     let invisible_overlay_ref = invisible_overlay_ref.clone();
 
     Callback::from(move |_| {
-      let now = Utc::now();
+      let now = OffsetDateTime::now_utc();
       let conv_name = format_date_time(now);
 
       conversations.dispatch(ConversationsAction::CreateConversation(conv_name.clone(), now));

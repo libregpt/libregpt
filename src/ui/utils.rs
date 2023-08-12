@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use time::OffsetDateTime;
 use web_sys::HtmlElement;
 use yew::NodeRef;
 
@@ -18,6 +18,6 @@ pub fn set_scroll_top_to_scroll_height(node_ref: &NodeRef) {
   el.set_scroll_top(el.scroll_height());
 }
 
-pub fn format_date_time(date_time: DateTime<Utc>) -> String {
-  date_time.format("%Y-%m-%d %H:%M:%S").to_string()
+pub fn format_date_time(date_time: OffsetDateTime) -> String {
+  date_time.format(time::macros::format_description!("[year]-[month]-[day] [hour]:[minute]:[second]")).unwrap()
 }
