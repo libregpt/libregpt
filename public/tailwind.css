@@ -8,6 +8,28 @@ html {
   font-family: "Inter", sans-serif;
 }
 
+* {
+  --color-transition-duration: 150ms;
+  transition: background-color var(--color-transition-duration) ease-out,
+              color var(--color-transition-duration) ease-out,
+              stroke var(--color-transition-duration) ease-out,
+              fill var(--color-transition-duration) ease-out,
+              transform 300ms ease-out,
+              padding 300ms ease-out !important;
+}
+
+textarea::placeholder {
+  @apply text-[#6D6D6D];
+}
+
+.theme-switcher-button > svg {
+  @apply fill-none stroke-[#333333] dark:stroke-[#F5F5F5] w-5 pointer-events-none;
+}
+
+.theme-switcher-button:hover > svg, .theme-switcher-button[aria-checked="true"] > svg {
+  @apply !stroke-[#FF7A1F];
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-size: revert;
   font-weight: revert;
@@ -38,5 +60,5 @@ code.inline {
 }
 
 pre, code.inline {
-  @apply bg-[#EFEFEF] rounded-lg;
+  @apply bg-[#EFEFEF] dark:bg-[#404040] rounded-lg;
 }

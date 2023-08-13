@@ -924,7 +924,6 @@ dependencies = [
  "futures-util",
  "gloo-net",
  "gloo-timers",
- "gloo-utils",
  "hex",
  "hyper",
  "hyper-boring",

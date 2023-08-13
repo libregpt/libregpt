@@ -10,11 +10,11 @@ pub struct MessageProps {
 #[function_component]
 pub fn Message(props: &MessageProps) -> Html {
   let mut container_class = "flex".to_owned();
-  let mut bubble_class = "rounded-xl bg-[#F5F5F5] break-words max-w-full flex flex-col gap-3".to_owned();
+  let mut bubble_class = "rounded-xl bg-[#F5F5F5] dark:bg-[#292929] break-words max-w-full flex flex-col gap-3".to_owned();
 
   if props.index % 2 == 0 {
     container_class.push_str(" justify-end");
-    bubble_class.push_str(" bg-[#FF983F]");
+    bubble_class.push_str(" bg-[#FF983F] dark:bg-[#FF7A1F]");
   }
 
   let mut lines = props.content.lines();

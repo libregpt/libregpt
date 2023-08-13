@@ -6,6 +6,28 @@
     <link data-trunk rel="rust" data-cargo-features="hydration">
     <link data-trunk rel="icon" href="./public/favicon.ico">
     <link data-trunk rel="tailwind-css" href="./public/tailwind.css">
+    <script>
+      const darkModePreference = window.matchMedia("(prefers-color-scheme: dark)");
+
+      function setTheme() {
+        if (localStorage.theme === "dark" || (!("theme" in localStorage) && darkModePreference.matches)) {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+      }
+
+      function updateThemeSwitcher() {
+        for (const button of document.getElementsByClassName("theme-switcher-button")) {
+          button.setAttribute("aria-checked", (button.dataset.theme ? button.dataset.theme === localStorage.theme : !("theme" in localStorage)).toString());
+        }
+      }
+
+      window.onload = updateThemeSwitcher;
+      darkModePreference.onchange = setTheme;
+
+      setTheme();
+    </script>
     <title>LibreGPT</title>
   </head>
 </html>
