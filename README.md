@@ -1,11 +1,21 @@
-# LibreGPT
+<div align="center">
+  <h1>LibreGPT</h1>
+  <p>A GPT front-end built for privacy.</p>
+</div>
 
-A GPT front-end built for privacy.
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li><a href="#motivation">Motivation</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#instances">Instances</a></li>
+    <li><a href="#hosting">Hosting</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#license">License</a></li>
+  </ol>
+</details>
 
-> **Note**
-> This project is under heavy development.
-
-### Why?
+## Motivation
 
 It's almost impossible to use services that give access to GPT models without giving away your data.
 Some need your phone number and/or your email and the ones that don't require an account can still track you when you visit their website.
@@ -18,7 +28,9 @@ This project acts as a proxy between you and whatever provider you choose, witho
 
 ## Instances
 
-None (for now).
+| URL                     | Network  | Location | Cloudflare                       |
+|-------------------------|----------|----------|----------------------------------|
+| https://chat.samue.land | Clearnet | 🇺🇸 US  | $\textcolor{green}{\textsf{No}}$ |
 
 If you don't trust public instances and want to deploy your own take a look at the [hosting](#hosting) section.
 
