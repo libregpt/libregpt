@@ -29,6 +29,7 @@ wasm-logger = "0.2"
 anyhow = "1"
 async-trait = "0.1"
 axum = "0.6"
+axum-server = { version = "0.5", features = ["tls-rustls"] }
 boring = "2"
 futures = "0.3"
 hex = "0.4"

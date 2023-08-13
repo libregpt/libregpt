@@ -16,8 +16,9 @@ fn main() {
 async fn main() {
   use std::{env, fs};
   use std::sync::Arc;
-  use axum::{Router, routing, Server};
+  use axum::{Router, routing};
   use axum::handler::HandlerWithoutStateExt;
+  use axum_server::tls_rustls::RustlsConfig;
   use tower::ServiceBuilder;
   use tower_http::compression::CompressionLayer;
   use tower_http::services::ServeDir;
@@ -25,7 +26,8 @@ async fn main() {
 
   tracing_subscriber::fmt::init();
 
-  let port = match env::var("PORT").map_or(Ok(80), |p| p.parse()) {
+  let tls = env::args().any(|arg| arg == "--tls");
+  let port = match env::var("PORT").map_or(Ok(if tls { 443 } else { 80 }), |p| p.parse()) {
     Ok(port) => port,
     Err(err) => return error!("invalid port: {err}"),
   };
@@ -55,11 +57,27 @@ async fn main() {
     .fallback(routes::default);
 
   let addr = ([0, 0, 0, 0], port).into();
-  let server = Server::bind(&addr).serve(router.into_make_service());
 
-  info!("listening on {addr}");
+  if tls {
+    let tls_cfg = match RustlsConfig::from_pem_file("cert.pem", "key.pem").await {
+      Ok(cfg) => cfg,
+      Err(err) => return error!("failed to read 'cert.pem' and/or 'key.pem': {err}"),
+    };
 
-  if let Err(err) = server.await {
-    error!("server died: {err}");
+    let server = axum_server::bind_rustls(addr, tls_cfg).serve(router.into_make_service());
+
+    info!("listening on {addr}");
+
+    if let Err(err) = server.await {
+      error!("server died: {err}");
+    }
+  } else {
+    let server = axum::Server::bind(&addr).serve(router.into_make_service());
+
+    info!("listening on {addr}");
+
+    if let Err(err) = server.await {
+      error!("server died: {err}");
+    }
   }
 }

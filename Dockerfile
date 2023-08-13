@@ -25,6 +25,8 @@ COPY --from=builder /etc/ssl/certs /etc/ssl/certs/
 COPY --from=builder /usr/share/ca-certificates /usr/share/ca-certificates/
 COPY --from=builder /tmp/libregpt/dist ./dist
 COPY --from=builder /tmp/libregpt/target/release/libregpt .
+COPY cert.pem key.pem ./
 
 EXPOSE 80
-CMD ["./libregpt"]
+EXPOSE 443
+CMD ./libregpt ${ARGS}
