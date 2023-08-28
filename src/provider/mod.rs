@@ -1,3 +1,4 @@
+mod ava;
 mod bai;
 mod deepai;
 mod you;
@@ -21,6 +22,7 @@ pub type Map = HashMap<&'static str, Box<dyn Provider>>;
 pub fn s() -> Map {
   let mut providers = HashMap::new();
 
+  providers.insert("ava", Box::new(ava::Provider::new()) as Box<dyn Provider>);
   providers.insert("bai", Box::new(bai::Provider::new()) as Box<dyn Provider>);
   providers.insert(
     "deepai",

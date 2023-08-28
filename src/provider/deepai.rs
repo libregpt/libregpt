@@ -41,7 +41,7 @@ impl super::Provider for Provider {
     content_type.push_str(&boundary);
 
     let prompt = serde_json::to_string(prompt)?;
-    let chat_len = state.as_ref().map_or(2, |chat| chat.len() + 1) + 26 + prompt.len();
+    let chat_len = state.map_or(2, |chat| chat.len() + 1) + 26 + prompt.len();
     let mut body = String::with_capacity(2 + boundary.len() * 3 + 61 + 54 + chat_len + 4 + 4);
 
     body.push_str("--");
