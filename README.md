@@ -1,6 +1,11 @@
 <div align="center">
   <h1>LibreGPT</h1>
   <p>A GPT front-end built for privacy.</p>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/libregpt/assets/main/screenshot-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/libregpt/assets/main/screenshot-light.png">
+    <img alt="" src="https://raw.githubusercontent.com/libregpt/assets/main/screenshot-light.png">
+  </picture>
 </div>
 
 <details>
