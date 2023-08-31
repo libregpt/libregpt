@@ -14,10 +14,11 @@ fn main() {
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() {
-  use std::{env, fs};
   use std::sync::Arc;
-  use axum::{Router, routing};
+  use std::{env, fs};
+
   use axum::handler::HandlerWithoutStateExt;
+  use axum::{routing, Router};
   use axum_server::tls_rustls::RustlsConfig;
   use tower::ServiceBuilder;
   use tower_http::compression::CompressionLayer;
@@ -38,17 +39,18 @@ async fn main() {
   let mut index_html_before = index_html_before.to_owned();
   index_html_before.push_str("<body>");
 
-  let serve_dist_dir = ServiceBuilder::new().layer(CompressionLayer::new()).service(
-    ServeDir::new("dist")
-      .append_index_html_on_directories(false)
-      .not_found_service(routes::default.into_service()),
-  );
+  let serve_dist_dir = ServiceBuilder::new()
+    .layer(CompressionLayer::new())
+    .service(
+      ServeDir::new("dist")
+        .append_index_html_on_directories(false)
+        .not_found_service(routes::default.into_service()),
+    );
 
-  let render = routing::get(routes::render)
-    .with_state((index_html_before, index_html_after.to_owned()));
+  let render =
+    routing::get(routes::render).with_state((index_html_before, index_html_after.to_owned()));
 
-  let ask = routing::get(routes::ask)
-    .with_state(Arc::new(provider::s()));
+  let ask = routing::get(routes::ask).with_state(Arc::new(provider::s()));
 
   let router = Router::new()
     .route("/", render)

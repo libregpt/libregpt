@@ -1,12 +1,17 @@
-use web_sys::{HtmlElement, MouseEvent, window};
-use yew::{Callback, function_component, Html, html, TargetCast};
+use web_sys::{window, HtmlElement, MouseEvent};
+use yew::{function_component, html, Callback, Html, TargetCast};
 
 #[function_component]
 pub fn ThemeSwitcher() -> Html {
   let onclick = Callback::from(move |e: MouseEvent| {
     let target: HtmlElement = e.target_unchecked_into();
     let window = window().unwrap();
-    let document_class_list = window.document().unwrap().document_element().unwrap().class_list();
+    let document_class_list = window
+      .document()
+      .unwrap()
+      .document_element()
+      .unwrap()
+      .class_list();
     let local_storage = window.local_storage().unwrap().unwrap();
 
     if let Some(theme) = target.dataset().get("theme") {
@@ -20,7 +25,11 @@ pub fn ThemeSwitcher() -> Html {
     } else {
       local_storage.remove_item("theme").unwrap();
 
-      if window.match_media("(prefers-color-scheme: dark)").unwrap().is_some_and(|list| list.matches()) {
+      if window
+        .match_media("(prefers-color-scheme: dark)")
+        .unwrap()
+        .is_some_and(|list| list.matches())
+      {
         document_class_list.add_1("dark").unwrap();
       } else {
         document_class_list.remove_1("dark").unwrap();
@@ -33,7 +42,12 @@ pub fn ThemeSwitcher() -> Html {
     let mut i = 0;
 
     while let Some(button) = parent_children.item(i) {
-      button.set_attribute("aria-checked", &button.is_same_node(Some(&target)).to_string()).unwrap();
+      button
+        .set_attribute(
+          "aria-checked",
+          &button.is_same_node(Some(&target)).to_string(),
+        )
+        .unwrap();
       i += 1;
     }
   });

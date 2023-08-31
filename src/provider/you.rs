@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+
 use async_trait::async_trait;
 use boring::ssl::{SslConnector, SslMethod, SslVersion};
 use hyper::client::HttpConnector;
@@ -94,7 +95,13 @@ impl super::Provider for Provider {
   ) -> anyhow::Result<(Option<String>, Body)> {
     let mut url = Url::parse("https://you.com/api/streamingSearch").unwrap();
     let (chat_id, chat) = state
-      .and_then(|state| if state.len() < 38 { None } else { Some((Cow::Borrowed(&state[..36]), &state[36..])) })
+      .and_then(|state| {
+        if state.len() < 38 {
+          None
+        } else {
+          Some((Cow::Borrowed(&state[..36]), &state[36..]))
+        }
+      })
       .unwrap_or_else(|| (Uuid::new_v4().to_string().into(), "[]"));
 
     {

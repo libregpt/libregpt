@@ -2,14 +2,21 @@ mod ui;
 
 use std::iter;
 use std::rc::Rc;
+
 use futures_util::StreamExt;
 use gloo_timers::future::TimeoutFuture;
 use serde::Serialize;
 use wasm_bindgen::JsCast;
 use wasm_streams::ReadableStream;
-use web_sys::{Event, HtmlElement, HtmlOptionElement, HtmlSelectElement, HtmlTextAreaElement, TextDecodeOptions, TextDecoder, window};
-use yew::{Callback, function_component, Html, html, TargetCast, use_effect_with_deps, use_mut_ref, use_node_ref, use_reducer};
+use web_sys::{
+  window, Event, HtmlElement, HtmlOptionElement, HtmlSelectElement, HtmlTextAreaElement,
+  TextDecodeOptions, TextDecoder,
+};
 use yew::events::{KeyboardEvent, SubmitEvent};
+use yew::{
+  function_component, html, use_effect_with_deps, use_mut_ref, use_node_ref, use_reducer, Callback,
+  Html, TargetCast,
+};
 
 use crate::ui::components::{Message, ThemeSwitcher};
 use crate::ui::reducers::{Conversations, ConversationsAction};
@@ -53,27 +60,36 @@ pub fn App() -> Html {
     })
   };
 
-  let conversations = use_reducer(|| {
-    Conversations::new(PROVIDERS.iter().find(|p| !p.2).unwrap().0)
-  });
+  let conversations =
+    use_reducer(|| Conversations::new(PROVIDERS.iter().find(|p| !p.2).unwrap().0));
 
-  let mut_conversations = use_mut_ref(|| (conversations.name_set(), conversations.curr_name.clone()));
+  let mut_conversations =
+    use_mut_ref(|| (conversations.name_set(), conversations.curr_name.clone()));
 
   {
     let messages_ref = messages_ref.clone();
 
-    use_effect_with_deps(move |_| {
-      set_scroll_top_to_scroll_height(&messages_ref);
-    }, conversations.curr_name.clone());
+    use_effect_with_deps(
+      move |_| {
+        set_scroll_top_to_scroll_height(&messages_ref);
+      },
+      conversations.curr_name.clone(),
+    );
   }
 
   {
     let conversations_2 = conversations.clone();
     let mut_conversations = mut_conversations.clone();
 
-    use_effect_with_deps(move |_| {
-      *mut_conversations.borrow_mut() = (conversations_2.name_set(), conversations_2.curr_name.clone());
-    }, conversations.clone());
+    use_effect_with_deps(
+      move |_| {
+        *mut_conversations.borrow_mut() = (
+          conversations_2.name_set(),
+          conversations_2.curr_name.clone(),
+        );
+      },
+      conversations.clone(),
+    );
   }
 
   let onsubmit = {
@@ -93,10 +109,18 @@ pub fn App() -> Html {
 
       let task_conv_name = conversations.curr_name.clone();
 
-      conversations.dispatch(ConversationsAction::SetUpdatingLastMessage(task_conv_name.clone(), true));
+      conversations.dispatch(ConversationsAction::SetUpdatingLastMessage(
+        task_conv_name.clone(),
+        true,
+      ));
       prompt_el.set_value("");
-      prompt_el.dispatch_event(&Event::new("input").unwrap()).unwrap();
-      conversations.dispatch(ConversationsAction::PushMessage(task_conv_name.clone(), prompt_val.clone()));
+      prompt_el
+        .dispatch_event(&Event::new("input").unwrap())
+        .unwrap();
+      conversations.dispatch(ConversationsAction::PushMessage(
+        task_conv_name.clone(),
+        prompt_val.clone(),
+      ));
       set_scroll_top_to_scroll_height(&messages_ref);
 
       let mut url = window().unwrap().location().origin().unwrap();
@@ -111,32 +135,36 @@ pub fn App() -> Html {
           } else {
             Some(
               serde_json::to_string(
-                &conv.messages
+                &conv
+                  .messages
                   .iter()
                   .enumerate()
                   .map(|(i, msg)| DeepAiMessage {
                     role: if i % 2 == 0 { "user" } else { "assistant" },
                     content: msg,
                   })
-                  .collect::<Vec<_>>()
-              ).unwrap()
+                  .collect::<Vec<_>>(),
+              )
+              .unwrap(),
             )
           }
-        },
+        }
         "bai" => conv.last_msg_id.clone(),
         "you" => {
           if conv.messages.is_empty() {
             None
           } else if let Some(last_msg_id) = conv.last_msg_id.as_ref() {
             let chat = serde_json::to_string(
-              &conv.messages
+              &conv
+                .messages
                 .chunks(2)
                 .map(|chunk| YouMessage {
                   question: &chunk[0],
                   answer: &chunk[1],
                 })
-                .collect::<Vec<_>>()
-            ).unwrap();
+                .collect::<Vec<_>>(),
+            )
+            .unwrap();
 
             let mut state = String::with_capacity(last_msg_id.len() + chat.len());
             state.push_str(last_msg_id);
@@ -146,7 +174,7 @@ pub fn App() -> Html {
           } else {
             None
           }
-        },
+        }
         _ => unreachable!(),
       };
 
@@ -163,11 +191,18 @@ pub fn App() -> Html {
           params.push(("state", state));
         }
 
-        let res = gloo_net::http::Request::get(&url).query(params).send().await.unwrap();
+        let res = gloo_net::http::Request::get(&url)
+          .query(params)
+          .send()
+          .await
+          .unwrap();
 
         if res.ok() {
           if let Some(msg_id) = res.headers().get("msg-id") {
-            conversations.dispatch(ConversationsAction::SetLastMessageId(task_conv_name.clone(), msg_id));
+            conversations.dispatch(ConversationsAction::SetLastMessageId(
+              task_conv_name.clone(),
+              msg_id,
+            ));
           }
         }
 
@@ -176,17 +211,23 @@ pub fn App() -> Html {
         let mut decode_options = TextDecodeOptions::new();
         decode_options.stream(true);
 
-        let mut stream = ReadableStream::from_raw(res.body().unwrap().dyn_into().unwrap()).into_stream();
+        let mut stream =
+          ReadableStream::from_raw(res.body().unwrap().dyn_into().unwrap()).into_stream();
 
         'outer: while let Some(Ok(chunk)) = stream.next().await {
-          let chunk = decoder.decode_with_buffer_source_and_options(&js_sys::Object::from(chunk), &decode_options).unwrap();
+          let chunk = decoder
+            .decode_with_buffer_source_and_options(&js_sys::Object::from(chunk), &decode_options)
+            .unwrap();
 
           for char in chunk.chars() {
             if !mut_conversations.borrow().0.contains(&task_conv_name) {
               break 'outer;
             }
 
-            conversations.dispatch(ConversationsAction::UpdateLastMessage(task_conv_name.clone(), char));
+            conversations.dispatch(ConversationsAction::UpdateLastMessage(
+              task_conv_name.clone(),
+              char,
+            ));
 
             if task_conv_name == mut_conversations.borrow().1 {
               set_scroll_top_to_scroll_height(&messages_ref);
@@ -196,7 +237,10 @@ pub fn App() -> Html {
           }
         }
 
-        conversations.dispatch(ConversationsAction::SetUpdatingLastMessage(task_conv_name.clone(), false));
+        conversations.dispatch(ConversationsAction::SetUpdatingLastMessage(
+          task_conv_name.clone(),
+          false,
+        ));
       });
     })
   };
@@ -215,7 +259,9 @@ pub fn App() -> Html {
       let invisible_overlay_el: HtmlElement = invisible_overlay_ref.cast().unwrap();
 
       sidebar_el.style().set_css_text("transform: translateX(0);");
-      overlay_el.style().set_css_text("background-color: rgba(0, 0, 0, 0.5);");
+      overlay_el
+        .style()
+        .set_css_text("background-color: rgba(0, 0, 0, 0.5);");
       invisible_overlay_el.style().set_css_text("display: block;");
     })
   };

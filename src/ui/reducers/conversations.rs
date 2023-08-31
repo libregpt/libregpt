@@ -1,7 +1,9 @@
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
+
 use time::OffsetDateTime;
 use yew::Reducible;
+
 use crate::ui::utils::format_date_time;
 
 #[derive(Clone, PartialEq)]
@@ -40,7 +42,10 @@ impl Conversations {
 
     Self {
       default_provider: default_provider.clone(),
-      inner: HashMap::from([(first_conv_name.clone(), Conversation::new(now, default_provider))]),
+      inner: HashMap::from([(
+        first_conv_name.clone(),
+        Conversation::new(now, default_provider),
+      )]),
       curr_name: first_conv_name,
     }
   }
@@ -50,7 +55,11 @@ impl Conversations {
   }
 
   pub fn names(&self) -> Vec<Rc<str>> {
-    let mut conv_names = self.inner.iter().map(|(name, conv)| (name.clone(), conv.created_at)).collect::<Vec<_>>();
+    let mut conv_names = self
+      .inner
+      .iter()
+      .map(|(name, conv)| (name.clone(), conv.created_at))
+      .collect::<Vec<_>>();
     conv_names.sort_by(|a, b| a.1.cmp(&b.1));
 
     conv_names.into_iter().map(|(name, _)| name).collect()
@@ -72,12 +81,15 @@ impl Reducible for Conversations {
         let now = OffsetDateTime::now_utc();
         let name: Rc<str> = format_date_time(now).into();
 
-        inner.insert(name.clone(), Conversation::new(now, self.default_provider.clone()));
+        inner.insert(
+          name.clone(),
+          Conversation::new(now, self.default_provider.clone()),
+        );
 
         curr_name = name;
 
         inner
-      },
+      }
       Self::Action::DeleteConversation(name, i) => {
         let mut inner = self.inner.clone();
 
@@ -85,17 +97,23 @@ impl Reducible for Conversations {
           let now = OffsetDateTime::now_utc();
           let name: Rc<str> = format_date_time(now).into();
 
-          inner.insert(name.clone(), Conversation::new(now, self.default_provider.clone()));
+          inner.insert(
+            name.clone(),
+            Conversation::new(now, self.default_provider.clone()),
+          );
           curr_name = name;
         } else if name == self.curr_name {
           let conv_names = self.names();
-          curr_name = conv_names.get(i+1).unwrap_or_else(|| conv_names.get(i-1).unwrap()).clone();
+          curr_name = conv_names
+            .get(i + 1)
+            .unwrap_or_else(|| conv_names.get(i - 1).unwrap())
+            .clone();
         }
 
         inner.remove(&name);
 
         inner
-      },
+      }
       Self::Action::PushMessage(name, mut msg) => {
         msg.push('\n');
 
@@ -107,18 +125,18 @@ impl Reducible for Conversations {
         conv.messages.push("\n".to_owned());
 
         inner
-      },
+      }
       Self::Action::SetCurrentName(name) => {
         curr_name = name;
         self.inner.clone()
-      },
+      }
       Self::Action::SetLastMessageId(name, last_msg_id) => {
         let mut inner = self.inner.clone();
         let conv = inner.get_mut(&name).unwrap();
         let _ = conv.last_msg_id.insert(last_msg_id);
 
         inner
-      },
+      }
       Self::Action::SetProvider(provider) => {
         let mut inner = self.inner.clone();
         let conv = inner.get_mut(&self.curr_name).unwrap();
@@ -126,7 +144,7 @@ impl Reducible for Conversations {
         conv.provider = provider.into();
 
         inner
-      },
+      }
       Self::Action::SetUpdatingLastMessage(name, updating_last_msg) => {
         let mut inner = self.inner.clone();
 
@@ -135,7 +153,7 @@ impl Reducible for Conversations {
         }
 
         inner
-      },
+      }
       Self::Action::UpdateLastMessage(name, char) => {
         let mut inner = self.inner.clone();
 
@@ -148,14 +166,15 @@ impl Reducible for Conversations {
         }
 
         inner
-      },
+      }
     };
 
     Self {
       default_provider: self.default_provider.clone(),
       inner,
       curr_name,
-    }.into()
+    }
+    .into()
   }
 }
 

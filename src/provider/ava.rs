@@ -1,6 +1,6 @@
 use async_trait::async_trait;
-use hyper::{Body, Client, header, Method, Request};
 use hyper::client::HttpConnector;
+use hyper::{header, Body, Client, Method, Request};
 use hyper_rustls::HttpsConnector;
 use rand_user_agent::UserAgent;
 use serde::Deserialize;
@@ -8,7 +8,8 @@ use tokio::io::AsyncBufReadExt;
 use tokio::task;
 use tokio_util::io::StreamReader;
 use tracing::error;
-use crate::util::{BodyStream, new_rustls_connector};
+
+use crate::util::{new_rustls_connector, BodyStream};
 
 pub struct Provider {
   client: Client<HttpsConnector<HttpConnector>>,
@@ -25,7 +26,11 @@ impl Provider {
 
 #[async_trait]
 impl super::Provider for Provider {
-  async fn ask<'a>(&self, prompt: &str, state: Option<&str>) -> anyhow::Result<(Option<String>, Body)> {
+  async fn ask<'a>(
+    &self,
+    prompt: &str,
+    state: Option<&str>,
+  ) -> anyhow::Result<(Option<String>, Body)> {
     let prompt = serde_json::to_string(prompt)?;
     let chat_len = state.map_or(2, |chat| chat.len() + 1) + 26 + prompt.len();
     let mut body = String::with_capacity(12 + chat_len + 1);
@@ -64,16 +69,14 @@ impl super::Provider for Provider {
             match line.as_str() {
               "\n" => {}
               "data: [DONE]\n" => break,
-              _ => {
-                match serde_json::from_str::<Data>(&line[6..]) {
-                  Ok(mut data) => {
-                    if let Some(content) = data.choices.swap_remove(0).delta.content {
-                      drop(tx.send_data(content.into()).await)
-                    }
+              _ => match serde_json::from_str::<Data>(&line[6..]) {
+                Ok(mut data) => {
+                  if let Some(content) = data.choices.swap_remove(0).delta.content {
+                    drop(tx.send_data(content.into()).await)
                   }
-                  Err(err) => error!("failed to deserialize data line: {err}"),
                 }
-              }
+                Err(err) => error!("failed to deserialize data line: {err}"),
+              },
             }
             line.clear();
           }

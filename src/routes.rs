@@ -1,5 +1,6 @@
 use std::convert::Infallible;
 use std::sync::Arc;
+
 use axum::body::StreamBody;
 use axum::extract::{Query, State};
 use axum::http::{header, StatusCode};
@@ -9,9 +10,12 @@ use hyper::Body;
 use serde::Deserialize;
 use tracing::error;
 use yew::ServerRenderer;
+
 use crate::provider;
 
-pub async fn render(State((index_html_before, index_html_after)): State<(String, String)>) -> impl IntoResponse {
+pub async fn render(
+  State((index_html_before, index_html_after)): State<(String, String)>,
+) -> impl IntoResponse {
   let renderer = ServerRenderer::<libregpt::App>::new();
 
   StreamBody::new(
