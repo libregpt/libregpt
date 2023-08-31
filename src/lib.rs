@@ -5,16 +5,15 @@ use std::rc::Rc;
 use futures_util::StreamExt;
 use gloo_timers::future::TimeoutFuture;
 use serde::Serialize;
-use time::OffsetDateTime;
 use wasm_bindgen::JsCast;
 use wasm_streams::ReadableStream;
 use web_sys::{Event, HtmlElement, HtmlOptionElement, HtmlSelectElement, HtmlTextAreaElement, TextDecodeOptions, TextDecoder, window};
-use yew::{Callback, function_component, Html, html, TargetCast, use_effect_with_deps, use_mut_ref, use_node_ref, use_reducer, use_state};
+use yew::{Callback, function_component, Html, html, TargetCast, use_effect_with_deps, use_mut_ref, use_node_ref, use_reducer};
 use yew::events::{KeyboardEvent, SubmitEvent};
 
 use crate::ui::components::{Message, ThemeSwitcher};
 use crate::ui::reducers::{Conversations, ConversationsAction};
-use crate::ui::utils::{close_sidebar as close_sidebar_fn, format_date_time, set_scroll_top_to_scroll_height};
+use crate::ui::utils::{close_sidebar as close_sidebar_fn, set_scroll_top_to_scroll_height};
 
 const PROVIDERS: &[(&str, &str, bool)] = &[
   ("ava", "Ava (gpt-3.5-turbo-0613)", false),
@@ -55,28 +54,31 @@ pub fn App() -> Html {
   };
 
   let conversations = use_reducer(|| {
-    let now = OffsetDateTime::now_utc();
-    let first_conv_name = format_date_time(now);
-
-    Conversations::new(first_conv_name, now, PROVIDERS.iter().find(|p| !p.2).unwrap().0.to_owned())
+    Conversations::new(PROVIDERS.iter().find(|p| !p.2).unwrap().0)
   });
 
-  let curr_conv_name = use_state(|| conversations.inner.keys().next().unwrap().clone());
-  let mut_curr_conv_name = use_mut_ref(|| (&*curr_conv_name).clone());
+  let mut_conversations = use_mut_ref(|| (conversations.name_set(), conversations.curr_name.clone()));
 
   {
     let messages_ref = messages_ref.clone();
 
     use_effect_with_deps(move |_| {
       set_scroll_top_to_scroll_height(&messages_ref);
-    }, curr_conv_name.clone());
+    }, conversations.curr_name.clone());
+  }
+
+  {
+    let conversations_2 = conversations.clone();
+    let mut_conversations = mut_conversations.clone();
+
+    use_effect_with_deps(move |_| {
+      *mut_conversations.borrow_mut() = (conversations_2.name_set(), conversations_2.curr_name.clone());
+    }, conversations.clone());
   }
 
   let onsubmit = {
     let prompt_ref = prompt_ref.clone();
     let messages_ref = messages_ref.clone();
-    let curr_conv_name = curr_conv_name.clone();
-    let mut_curr_conv_name = mut_curr_conv_name.clone();
     let conversations = conversations.clone();
 
     Callback::from(move |e: SubmitEvent| {
@@ -89,7 +91,7 @@ pub fn App() -> Html {
         return;
       }
 
-      let task_conv_name: Rc<str> = (&*curr_conv_name).to_string().into();
+      let task_conv_name = conversations.curr_name.clone();
 
       conversations.dispatch(ConversationsAction::SetUpdatingLastMessage(task_conv_name.clone(), true));
       prompt_el.set_value("");
@@ -148,8 +150,8 @@ pub fn App() -> Html {
         _ => unreachable!(),
       };
 
-      let mut_curr_conv_name = mut_curr_conv_name.clone();
       let conversations = conversations.clone();
+      let mut_conversations = mut_conversations.clone();
       let messages_ref = messages_ref.clone();
 
       wasm_bindgen_futures::spawn_local(async move {
@@ -176,13 +178,17 @@ pub fn App() -> Html {
 
         let mut stream = ReadableStream::from_raw(res.body().unwrap().dyn_into().unwrap()).into_stream();
 
-        while let Some(Ok(chunk)) = stream.next().await {
+        'outer: while let Some(Ok(chunk)) = stream.next().await {
           let chunk = decoder.decode_with_buffer_source_and_options(&js_sys::Object::from(chunk), &decode_options).unwrap();
 
           for char in chunk.chars() {
+            if !mut_conversations.borrow().0.contains(&task_conv_name) {
+              break 'outer;
+            }
+
             conversations.dispatch(ConversationsAction::UpdateLastMessage(task_conv_name.clone(), char));
 
-            if task_conv_name.as_ref() == mut_curr_conv_name.borrow().as_str() {
+            if task_conv_name == mut_conversations.borrow().1 {
               set_scroll_top_to_scroll_height(&messages_ref);
             }
 
@@ -224,12 +230,11 @@ pub fn App() -> Html {
 
   let set_provider = {
     let conversations = conversations.clone();
-    let curr_conv_name = curr_conv_name.clone();
 
     Callback::from(move |e: Event| {
       let provider_el: HtmlSelectElement = e.target_unchecked_into();
 
-      conversations.dispatch(ConversationsAction::SetProvider(curr_conv_name.as_str().into(), provider_el.value()));
+      conversations.dispatch(ConversationsAction::SetProvider(provider_el.value()));
     })
   };
 
@@ -237,8 +242,6 @@ pub fn App() -> Html {
   let provider_ref = use_node_ref();
   let create_conv = {
     let conversations = conversations.clone();
-    let curr_conv_name = curr_conv_name.clone();
-    let mut_curr_conv_name = mut_curr_conv_name.clone();
     let conversations_ref = conversations_ref.clone();
     let provider_ref = provider_ref.clone();
     let sidebar_ref = sidebar_ref.clone();
@@ -246,12 +249,7 @@ pub fn App() -> Html {
     let invisible_overlay_ref = invisible_overlay_ref.clone();
 
     Callback::from(move |_| {
-      let now = OffsetDateTime::now_utc();
-      let conv_name = format_date_time(now);
-
-      conversations.dispatch(ConversationsAction::CreateConversation(conv_name.clone(), now));
-      curr_conv_name.set(conv_name.clone());
-      *mut_curr_conv_name.borrow_mut() = conv_name;
+      conversations.dispatch(ConversationsAction::CreateConversation);
 
       let provider_el: HtmlSelectElement = provider_ref.cast().unwrap();
 
@@ -262,10 +260,8 @@ pub fn App() -> Html {
     })
   };
 
-  let mut conv_names = conversations.inner.iter().map(|(name, conv)| (Rc::<str>::from(name.as_str()), conv.created_at)).collect::<Vec<_>>();
-  conv_names.sort_by(|a, b| a.1.cmp(&b.1));
-
-  let conv = conversations.inner.get(&*curr_conv_name).unwrap();
+  let conv_names: Rc<Vec<_>> = Rc::from(conversations.names());
+  let conv = conversations.current();
 
   html! {
     <div class="h-screen flex gap-4 lg:p-4 bg-[#E1E1E1] dark:bg-[#151515] text-[#333333] dark:text-[#F5F5F5]">
@@ -278,10 +274,8 @@ pub fn App() -> Html {
           </div>
 
           <div ref={conversations_ref} class="flex-1 flex flex-col gap-3 overflow-y-auto">
-            {for conv_names.iter().map(|(name, _)| {
+            {for conv_names.iter().enumerate().map(|(i, name)| {
               let onclick = {
-                let curr_conv_name = curr_conv_name.clone();
-                let mut_curr_conv_name = mut_curr_conv_name.clone();
                 let name = name.clone();
                 let provider_ref = provider_ref.clone();
                 let conversations = conversations.clone();
@@ -290,8 +284,7 @@ pub fn App() -> Html {
                 let invisible_overlay_ref = invisible_overlay_ref.clone();
 
                 Callback::from(move |_| {
-                  curr_conv_name.set(name.to_string());
-                  *mut_curr_conv_name.borrow_mut() = name.to_string();
+                  conversations.dispatch(ConversationsAction::SetCurrentName(name.clone()));
 
                   let provider_el: HtmlSelectElement = provider_ref.cast().unwrap();
                   let child_nodes = provider_el.child_nodes();
@@ -299,7 +292,7 @@ pub fn App() -> Html {
                   let conv = conversations.inner.get(name.as_ref()).unwrap();
 
                   while let Some(node) = child_nodes.item(i) {
-                    if node.unchecked_into::<HtmlOptionElement>().value() == conv.provider {
+                    if node.unchecked_into::<HtmlOptionElement>().value().as_str() == conv.provider.as_ref() {
                       provider_el.set_selected_index(i as i32);
                       break;
                     }
@@ -310,20 +303,46 @@ pub fn App() -> Html {
                 })
               };
 
-              let mut class = "px-2.5 py-2 rounded-xl bg-[#F5F5F5] dark:bg-[#292929] text-sm flex items-center cursor-pointer".to_owned();
-              let mut hash_class = "mr-1.5".to_owned();
+              let mut hash_class = String::with_capacity(6 + 15);
+              hash_class.push_str("mr-1.5");
 
-              if name.as_ref() == curr_conv_name.as_str() {
-                class.push_str(" bg-[#FF983F] dark:bg-[#FF7A1F]");
+              let mut trash_class = String::with_capacity(39 + 17);
+              trash_class.push_str("w-4 hover:stroke-red-600 cursor-pointer");
+
+              if name.as_ref() == conversations.curr_name.as_ref() {
                 hash_class.push_str(" text-[#C54A00]");
+                trash_class.push_str(" stroke-[#C54A00]");
               } else {
                 hash_class.push_str(" text-[#6D6D6D]");
+                trash_class.push_str(" stroke-[#6D6D6D]");
               }
 
+              let trash_onclick = {
+                let name = name.clone();
+                let conversations = conversations.clone();
+
+                Callback::from(move |_| {
+                  conversations.dispatch(ConversationsAction::DeleteConversation(name.clone(), i));
+                })
+              };
+
               html! {
-                <div class={class} {onclick}>
-                  <span class={hash_class}>{"#"}</span>
-                  <span class="whitespace-nowrap overflow-hidden text-ellipsis inline-block">{name}</span>
+                <div
+                  key={name.as_ref()}
+                  class="rounded-xl bg-[#F5F5F5] dark:bg-[#292929] text-sm flex justify-between items-center aria-selected:bg-[#FF983F] aria-selected:dark:bg-[#FF7A1F]"
+                  aria-selected={(name.as_ref() == conversations.curr_name.as_ref()).to_string()}
+                >
+                  <div class="flex pl-2.5 py-2 cursor-pointer" {onclick}>
+                    <span class={hash_class}>{"#"}</span>
+                    <span class="whitespace-nowrap overflow-hidden text-ellipsis inline-block">{name}</span>
+                  </div>
+                  <div class="pr-2.5 py-2">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5px" stroke-linecap="round" stroke-linejoin="round" class={trash_class} onclick={trash_onclick}>
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      <line x1="12" y1="11" x2="12" y2="17"></line>
+                    </svg>
+                  </div>
                 </div>
               }
             })}
@@ -345,12 +364,14 @@ pub fn App() -> Html {
               <div class="w-4 h-[0.1875rem] rounded bg-current"></div>
             }).take(3)}
           </div>
-          <div class="px-2.5 py-2 rounded-xl bg-[#F5F5F5] dark:bg-[#292929] flex items-center">{&*curr_conv_name}</div>
+          <div class="px-2.5 py-2 rounded-xl bg-[#F5F5F5] dark:bg-[#292929] flex gap-1.5 items-center">
+            <span>{conversations.curr_name.as_ref()}</span>
+          </div>
         </div>
 
         <div ref={messages_ref} class="flex-1 w-full flex flex-col gap-3 overflow-y-auto lg:gap-4">
           {for conv.messages.iter().enumerate().map(|(i, m)| html! {
-            <Message index={i} content={Rc::<str>::from(m.as_str())} />
+            <Message key={i} index={i} content={Rc::<str>::from(m.as_str())} />
           })}
         </div>
 
@@ -366,7 +387,7 @@ pub fn App() -> Html {
           <div>
             <select ref={provider_ref} class="px-2.5 py-2 rounded-xl bg-[#F5F5F5] dark:bg-[#292929] text-sm disabled:text-black/50 dark:disabled:text-white/50" disabled={!conv.messages.is_empty()} onchange={set_provider}>
               {for PROVIDERS.iter().map(|&(value, name, disabled)| html! {
-                <option key={value} value={value} disabled={disabled} selected={conv.provider.as_str() == value}>{name}</option>
+                <option key={value} value={value} disabled={disabled} selected={conv.provider.as_ref() == value}>{name}</option>
               })}
             </select>
           </div>
