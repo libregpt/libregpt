@@ -63,8 +63,7 @@ pub fn App() -> Html {
   let conversations =
     use_reducer(|| Conversations::new(PROVIDERS.iter().find(|p| !p.2).unwrap().0));
 
-  let mut_conversations =
-    use_mut_ref(|| (conversations.name_set(), conversations.curr_name.clone()));
+  let mut_conversations = use_mut_ref(|| (conversations.ids(), conversations.current_id));
 
   {
     let messages_ref = messages_ref.clone();
@@ -73,7 +72,7 @@ pub fn App() -> Html {
       move |_| {
         set_scroll_top_to_scroll_height(&messages_ref);
       },
-      conversations.curr_name.clone(),
+      conversations.current_id,
     );
   }
 
@@ -83,10 +82,7 @@ pub fn App() -> Html {
 
     use_effect_with_deps(
       move |_| {
-        *mut_conversations.borrow_mut() = (
-          conversations_2.name_set(),
-          conversations_2.curr_name.clone(),
-        );
+        *mut_conversations.borrow_mut() = (conversations_2.ids(), conversations_2.current_id);
       },
       conversations.clone(),
     );
@@ -107,10 +103,10 @@ pub fn App() -> Html {
         return;
       }
 
-      let task_conv_name = conversations.curr_name.clone();
+      let task_conv_id = conversations.current_id;
 
       conversations.dispatch(ConversationsAction::SetUpdatingLastMessage(
-        task_conv_name.clone(),
+        task_conv_id,
         true,
       ));
       prompt_el.set_value("");
@@ -118,7 +114,7 @@ pub fn App() -> Html {
         .dispatch_event(&Event::new("input").unwrap())
         .unwrap();
       conversations.dispatch(ConversationsAction::PushMessage(
-        task_conv_name.clone(),
+        task_conv_id,
         prompt_val.clone(),
       ));
       set_scroll_top_to_scroll_height(&messages_ref);
@@ -126,7 +122,7 @@ pub fn App() -> Html {
       let mut url = window().unwrap().location().origin().unwrap();
       url.push_str("/api/ask");
 
-      let conv = conversations.inner.get(task_conv_name.as_ref()).unwrap();
+      let conv = conversations.get(&task_conv_id);
       let provider = conv.provider.clone();
       let state = match provider.as_ref() {
         "ava" | "deepai" => {
@@ -199,10 +195,7 @@ pub fn App() -> Html {
 
         if res.ok() {
           if let Some(msg_id) = res.headers().get("msg-id") {
-            conversations.dispatch(ConversationsAction::SetLastMessageId(
-              task_conv_name.clone(),
-              msg_id,
-            ));
+            conversations.dispatch(ConversationsAction::SetLastMessageId(task_conv_id, msg_id));
           }
         }
 
@@ -220,16 +213,13 @@ pub fn App() -> Html {
             .unwrap();
 
           for char in chunk.chars() {
-            if !mut_conversations.borrow().0.contains(&task_conv_name) {
+            if !mut_conversations.borrow().0.contains(&task_conv_id) {
               break 'outer;
             }
 
-            conversations.dispatch(ConversationsAction::UpdateLastMessage(
-              task_conv_name.clone(),
-              char,
-            ));
+            conversations.dispatch(ConversationsAction::UpdateLastMessage(task_conv_id, char));
 
-            if task_conv_name == mut_conversations.borrow().1 {
+            if task_conv_id == mut_conversations.borrow().1 {
               set_scroll_top_to_scroll_height(&messages_ref);
             }
 
@@ -238,7 +228,7 @@ pub fn App() -> Html {
         }
 
         conversations.dispatch(ConversationsAction::SetUpdatingLastMessage(
-          task_conv_name.clone(),
+          task_conv_id,
           false,
         ));
       });
@@ -306,8 +296,7 @@ pub fn App() -> Html {
     })
   };
 
-  let conv_names: Rc<Vec<_>> = Rc::from(conversations.names());
-  let conv = conversations.current();
+  let curr_conv = conversations.current();
 
   html! {
     <div class="h-screen flex gap-4 lg:p-4 bg-[#E1E1E1] dark:bg-[#151515] text-[#333333] dark:text-[#F5F5F5]">
@@ -320,9 +309,8 @@ pub fn App() -> Html {
           </div>
 
           <div ref={conversations_ref} class="flex-1 flex flex-col gap-3 overflow-y-auto">
-            {for conv_names.iter().enumerate().map(|(i, name)| {
+            {for conversations.names().enumerate().map(|(i, (id, name))| {
               let onclick = {
-                let name = name.clone();
                 let provider_ref = provider_ref.clone();
                 let conversations = conversations.clone();
                 let sidebar_ref = sidebar_ref.clone();
@@ -330,12 +318,12 @@ pub fn App() -> Html {
                 let invisible_overlay_ref = invisible_overlay_ref.clone();
 
                 Callback::from(move |_| {
-                  conversations.dispatch(ConversationsAction::SetCurrentName(name.clone()));
+                  conversations.dispatch(ConversationsAction::SetCurrentId(id));
 
                   let provider_el: HtmlSelectElement = provider_ref.cast().unwrap();
                   let child_nodes = provider_el.child_nodes();
                   let mut i = 0;
-                  let conv = conversations.inner.get(name.as_ref()).unwrap();
+                  let conv = conversations.get(&id);
 
                   while let Some(node) = child_nodes.item(i) {
                     if node.unchecked_into::<HtmlOptionElement>().value().as_str() == conv.provider.as_ref() {
@@ -355,7 +343,7 @@ pub fn App() -> Html {
               let mut trash_class = String::with_capacity(39 + 17);
               trash_class.push_str("w-4 hover:stroke-red-600 cursor-pointer");
 
-              if name.as_ref() == conversations.curr_name.as_ref() {
+              if id == conversations.current_id {
                 hash_class.push_str(" text-[#C54A00]");
                 trash_class.push_str(" stroke-[#C54A00]");
               } else {
@@ -364,19 +352,18 @@ pub fn App() -> Html {
               }
 
               let trash_onclick = {
-                let name = name.clone();
                 let conversations = conversations.clone();
 
                 Callback::from(move |_| {
-                  conversations.dispatch(ConversationsAction::DeleteConversation(name.clone(), i));
+                  conversations.dispatch(ConversationsAction::DeleteConversation(id, i));
                 })
               };
 
               html! {
                 <div
-                  key={name.as_ref()}
+                  key={id.to_string()}
                   class="rounded-xl bg-[#F5F5F5] dark:bg-[#292929] text-sm flex justify-between items-center aria-selected:bg-[#FF983F] aria-selected:dark:bg-[#FF7A1F]"
-                  aria-selected={(name.as_ref() == conversations.curr_name.as_ref()).to_string()}
+                  aria-selected={(id == conversations.current_id).to_string()}
                 >
                   <div class="flex pl-2.5 py-2 cursor-pointer" {onclick}>
                     <span class={hash_class}>{"#"}</span>
@@ -411,12 +398,12 @@ pub fn App() -> Html {
             }).take(3)}
           </div>
           <div class="px-2.5 py-2 rounded-xl bg-[#F5F5F5] dark:bg-[#292929] flex gap-1.5 items-center">
-            <span>{conversations.curr_name.as_ref()}</span>
+            <span>{curr_conv.name.as_ref()}</span>
           </div>
         </div>
 
         <div ref={messages_ref} class="flex-1 w-full flex flex-col gap-3 overflow-y-auto lg:gap-4">
-          {for conv.messages.iter().enumerate().map(|(i, m)| html! {
+          {for curr_conv.messages.iter().enumerate().map(|(i, m)| html! {
             <Message key={i} index={i} content={Rc::<str>::from(m.as_str())} />
           })}
         </div>
@@ -424,16 +411,16 @@ pub fn App() -> Html {
         <form autocomplete="off" class="w-full flex flex-col gap-3" {onsubmit}>
           <div class="px-3.5 py-3 rounded-xl bg-[#F5F5F5] dark:bg-[#292929] flex">
             <textarea ref={prompt_ref} rows="1" placeholder="Ask anything..." autofocus=true class="flex-1 resize-none outline-none bg-transparent text-sm max-h-32 overflow-x-hidden" {onkeypress} {oninput}></textarea>
-            <button ref={submit_ref} type="submit" class="fill-[#333333] dark:fill-[#F5F5F5] disabled:cursor-not-allowed disabled:opacity-50 enabled:hover:fill-[#FF7A1F]" disabled={conv.updating_last_msg}>
+            <button ref={submit_ref} type="submit" class="fill-[#333333] dark:fill-[#F5F5F5] disabled:cursor-not-allowed disabled:opacity-50 enabled:hover:fill-[#FF7A1F]" disabled={curr_conv.updating_last_msg}>
               <svg viewBox="0 0 512 512" class="w-5 ml-2.5">
                 <path d="M440 6.5L24 246.4c-34.4 19.9-31.1 70.8 5.7 85.9L144 379.6V464c0 46.4 59.2 65.5 86.6 28.6l43.8-59.1 111.9 46.2c5.9 2.4 12.1 3.6 18.3 3.6 8.2 0 16.3-2.1 23.6-6.2 12.8-7.2 21.6-20 23.9-34.5l59.4-387.2c6.1-40.1-36.9-68.8-71.5-48.9zM192 464v-64.6l36.6 15.1L192 464zm212.6-28.7l-153.8-63.5L391 169.5c10.7-15.5-9.5-33.5-23.7-21.2L155.8 332.6 48 288 464 48l-59.4 387.3z"></path>
               </svg>
             </button>
           </div>
           <div>
-            <select ref={provider_ref} class="px-2.5 py-2 rounded-xl bg-[#F5F5F5] dark:bg-[#292929] text-sm disabled:text-black/50 dark:disabled:text-white/50" disabled={!conv.messages.is_empty()} onchange={set_provider}>
+            <select ref={provider_ref} class="px-2.5 py-2 rounded-xl bg-[#F5F5F5] dark:bg-[#292929] text-sm disabled:text-black/50 dark:disabled:text-white/50" disabled={!curr_conv.messages.is_empty()} onchange={set_provider}>
               {for PROVIDERS.iter().map(|&(value, name, disabled)| html! {
-                <option key={value} value={value} disabled={disabled} selected={conv.provider.as_ref() == value}>{name}</option>
+                <option key={value} value={value} disabled={disabled} selected={curr_conv.provider.as_ref() == value}>{name}</option>
               })}
             </select>
           </div>
