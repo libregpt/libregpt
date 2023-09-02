@@ -10,7 +10,7 @@ pub struct Conversation {
   pub created_at: OffsetDateTime,
   pub name: Rc<str>,
   pub provider: Rc<str>,
-  pub messages: Vec<String>,
+  pub messages: Vec<Rc<str>>,
   pub updating_last_msg: bool,
   pub last_msg_id: Option<String>,
 }
@@ -136,8 +136,16 @@ impl Reducible for Conversations {
         let conv = inner.get_mut(&id).unwrap();
 
         conv.messages.reserve_exact(2);
-        conv.messages.push(msg);
-        conv.messages.push("\n".to_owned());
+        conv.messages.push(msg.into());
+        conv.messages.push("\n".into());
+
+        inner
+      }
+      Self::Action::SetCurrentConversationName(name) => {
+        let mut inner = self.inner.clone();
+        let curr_conv = inner.get_mut(&self.current_id).unwrap();
+
+        curr_conv.name = name.into();
 
         inner
       }
@@ -173,11 +181,13 @@ impl Reducible for Conversations {
         let mut inner = self.inner.clone();
 
         if let Some(conv) = inner.get_mut(&id) {
-          let last = conv.messages.last_mut().unwrap();
+          let mut last = conv.messages.pop().unwrap().to_string();
 
           last.pop();
           last.push(char);
           last.push('\n');
+
+          conv.messages.push(last.into());
         }
 
         inner
@@ -197,6 +207,7 @@ pub enum ConversationsAction {
   CreateConversation,
   DeleteConversation(Uuid, usize),
   PushMessage(Uuid, String),
+  SetCurrentConversationName(String),
   SetCurrentId(Uuid),
   SetLastMessageId(Uuid, String),
   SetProvider(String),

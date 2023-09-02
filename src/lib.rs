@@ -1,7 +1,6 @@
 mod ui;
 
 use std::iter;
-use std::rc::Rc;
 
 use futures_util::StreamExt;
 use gloo_timers::future::TimeoutFuture;
@@ -9,13 +8,13 @@ use serde::Serialize;
 use wasm_bindgen::JsCast;
 use wasm_streams::ReadableStream;
 use web_sys::{
-  window, Event, HtmlElement, HtmlOptionElement, HtmlSelectElement, HtmlTextAreaElement,
-  TextDecodeOptions, TextDecoder,
+  window, Event, HtmlElement, HtmlInputElement, HtmlOptionElement, HtmlSelectElement,
+  HtmlTextAreaElement, TextDecodeOptions, TextDecoder,
 };
 use yew::events::{KeyboardEvent, SubmitEvent};
 use yew::{
-  function_component, html, use_effect_with_deps, use_mut_ref, use_node_ref, use_reducer, Callback,
-  Html, TargetCast,
+  function_component, html, use_effect_with_deps, use_mut_ref, use_node_ref, use_reducer,
+  use_state, Callback, Html, TargetCast,
 };
 
 use crate::ui::components::{Message, ThemeSwitcher};
@@ -296,12 +295,39 @@ pub fn App() -> Html {
     })
   };
 
+  let curr_conv_name_ref = use_node_ref();
+  let editing_name = use_state(|| false);
+  let edit_curr_conv_name = {
+    let curr_conv_name_ref = curr_conv_name_ref.clone();
+    let editing_name = editing_name.clone();
+    let conversations = conversations.clone();
+
+    Callback::from(move |e: SubmitEvent| {
+      e.prevent_default();
+
+      let curr_conv_name_el: HtmlInputElement = curr_conv_name_ref.cast().unwrap();
+
+      if *editing_name {
+        editing_name.set(false);
+        conversations.dispatch(ConversationsAction::SetCurrentConversationName(
+          curr_conv_name_el.value(),
+        ));
+        curr_conv_name_el.set_disabled(true);
+      } else {
+        editing_name.set(true);
+        curr_conv_name_el.set_disabled(false);
+        curr_conv_name_el.focus().unwrap();
+        curr_conv_name_el.select();
+      }
+    })
+  };
+
   let curr_conv = conversations.current();
 
   html! {
     <div class="h-screen flex gap-4 lg:p-4 bg-[#E1E1E1] dark:bg-[#151515] text-[#333333] dark:text-[#F5F5F5]">
       <div class="absolute w-full h-full z-20 flex pointer-events-none lg:w-fit lg:relative">
-        <div ref={sidebar_ref.clone()} class="p-5 pb-6 rounded-e-xl bg-[#EBEBEB] dark:bg-[#1A1A1A] pointer-events-auto flex flex-col gap-5 -translate-x-full md:w-[33%] lg:pb-5 lg:w-64 lg:translate-x-0 lg:rounded-s-xl">
+        <div ref={sidebar_ref.clone()} class="p-5 pb-6 rounded-e-xl bg-[#EBEBEB] dark:bg-[#1A1A1A] pointer-events-auto flex flex-col gap-5 -translate-x-full md:w-[37%] lg:pb-5 lg:w-64 lg:translate-x-0 lg:rounded-s-xl">
           <div class="flex gap-3 items-center justify-between">
             <span class="px-2.5 py-2 rounded-xl bg-[#F5F5F5] dark:bg-[#292929] font-bold">{"LibreGPT"}</span>
             <ThemeSwitcher />
@@ -365,7 +391,7 @@ pub fn App() -> Html {
                   class="rounded-xl bg-[#F5F5F5] dark:bg-[#292929] text-sm flex justify-between items-center aria-selected:bg-[#FF983F] aria-selected:dark:bg-[#FF7A1F]"
                   aria-selected={(id == conversations.current_id).to_string()}
                 >
-                  <div class="flex pl-2.5 py-2 cursor-pointer" {onclick}>
+                  <div class="flex pl-2.5 py-2 cursor-pointer overflow-hidden text-ellipsis" {onclick}>
                     <span class={hash_class}>{"#"}</span>
                     <span class="whitespace-nowrap overflow-hidden text-ellipsis inline-block">{name}</span>
                   </div>
@@ -390,29 +416,39 @@ pub fn App() -> Html {
 
       <div ref={overlay_ref} class="absolute w-full h-full z-10 pointer-events-none !transition-colors !duration-300 !ease-out lg:hidden"></div>
 
-      <div class="flex-1 w-full p-5 pb-6 lg:pb-5 lg:rounded-xl xl:px-[13%] bg-[#EBEBEB] dark:bg-[#1A1A1A] flex flex-col gap-5 items-center">
+      <div class="flex-1 w-full p-5 pb-6 lg:pb-5 lg:rounded-xl xl:px-[13vw] bg-[#EBEBEB] dark:bg-[#1A1A1A] flex flex-col gap-5 items-center">
         <div class="w-full flex gap-3">
           <div class="px-3.5 py-3.5 rounded-xl bg-[#F5F5F5] dark:bg-[#292929] flex flex-col gap-[0.1875rem] cursor-pointer lg:hidden" onclick={open_sidebar}>
             {for iter::repeat(html! {
               <div class="w-4 h-[0.1875rem] rounded bg-current"></div>
             }).take(3)}
           </div>
-          <div class="px-2.5 py-2 rounded-xl bg-[#F5F5F5] dark:bg-[#292929] flex gap-1.5 items-center">
-            <span>{curr_conv.name.as_ref()}</span>
-          </div>
+          <form class="px-3 py-2 rounded-xl bg-[#F5F5F5] dark:bg-[#292929] flex gap-1.5 items-center w-full md:w-fit" onsubmit={edit_curr_conv_name}>
+            <input ref={curr_conv_name_ref} type="text" required={true} disabled={true} value={curr_conv.name.clone()} class="w-full md:w-48 bg-transparent outline-none" />
+            <button type="submit" class="fill-current hover:fill-[#FF7A1F]">
+              <svg viewBox="0 0 20 20" class="w-5">
+                if *editing_name {
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                } else {
+                  <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"></path>
+                  <path d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path>
+                }
+              </svg>
+            </button>
+          </form>
         </div>
 
         <div ref={messages_ref} class="flex-1 w-full flex flex-col gap-3 overflow-y-auto lg:gap-4">
-          {for curr_conv.messages.iter().enumerate().map(|(i, m)| html! {
-            <Message key={i} index={i} content={Rc::<str>::from(m.as_str())} />
+          {for curr_conv.messages.iter().enumerate().map(|(i, msg)| html! {
+            <Message key={i} index={i} content={msg.clone()} />
           })}
         </div>
 
         <form autocomplete="off" class="w-full flex flex-col gap-3" {onsubmit}>
           <div class="px-3.5 py-3 rounded-xl bg-[#F5F5F5] dark:bg-[#292929] flex">
             <textarea ref={prompt_ref} rows="1" placeholder="Ask anything..." autofocus=true class="flex-1 resize-none outline-none bg-transparent text-sm max-h-32 overflow-x-hidden" {onkeypress} {oninput}></textarea>
-            <button ref={submit_ref} type="submit" class="fill-[#333333] dark:fill-[#F5F5F5] disabled:cursor-not-allowed disabled:opacity-50 enabled:hover:fill-[#FF7A1F]" disabled={curr_conv.updating_last_msg}>
-              <svg viewBox="0 0 512 512" class="w-5 ml-2.5">
+            <button ref={submit_ref} type="submit" class="ml-2.5 fill-current disabled:cursor-not-allowed disabled:opacity-50 enabled:hover:fill-[#FF7A1F]" disabled={curr_conv.updating_last_msg}>
+              <svg viewBox="0 0 512 512" class="w-5">
                 <path d="M440 6.5L24 246.4c-34.4 19.9-31.1 70.8 5.7 85.9L144 379.6V464c0 46.4 59.2 65.5 86.6 28.6l43.8-59.1 111.9 46.2c5.9 2.4 12.1 3.6 18.3 3.6 8.2 0 16.3-2.1 23.6-6.2 12.8-7.2 21.6-20 23.9-34.5l59.4-387.2c6.1-40.1-36.9-68.8-71.5-48.9zM192 464v-64.6l36.6 15.1L192 464zm212.6-28.7l-153.8-63.5L391 169.5c10.7-15.5-9.5-33.5-23.7-21.2L155.8 332.6 48 288 464 48l-59.4 387.3z"></path>
               </svg>
             </button>

@@ -15,6 +15,7 @@ html {
               stroke var(--color-transition-duration) ease-out,
               fill var(--color-transition-duration) ease-out,
               transform 300ms ease-out,
+              width 300ms ease-out,
               padding 300ms ease-out !important;
 }
 
