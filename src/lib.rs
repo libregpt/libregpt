@@ -65,17 +65,6 @@ pub fn App() -> Html {
   let mut_conversations = use_mut_ref(|| (conversations.ids(), conversations.current_id));
 
   {
-    let messages_ref = messages_ref.clone();
-
-    use_effect_with_deps(
-      move |_| {
-        set_scroll_top_to_scroll_height(&messages_ref);
-      },
-      conversations.current_id,
-    );
-  }
-
-  {
     let conversations_2 = conversations.clone();
     let mut_conversations = mut_conversations.clone();
 
@@ -322,6 +311,26 @@ pub fn App() -> Html {
     })
   };
 
+  {
+    let curr_conv_name_ref = curr_conv_name_ref.clone();
+    let editing_name = editing_name.clone();
+    let messages_ref = messages_ref.clone();
+
+    use_effect_with_deps(
+      move |_| {
+        if *editing_name {
+          let curr_conv_name_el: HtmlInputElement = curr_conv_name_ref.cast().unwrap();
+
+          editing_name.set(false);
+          curr_conv_name_el.set_disabled(true);
+        }
+
+        set_scroll_top_to_scroll_height(&messages_ref);
+      },
+      conversations.current_id,
+    );
+  }
+
   let curr_conv = conversations.current();
 
   html! {
@@ -388,10 +397,10 @@ pub fn App() -> Html {
               html! {
                 <div
                   key={id.to_string()}
-                  class="rounded-xl bg-[#F5F5F5] dark:bg-[#292929] text-sm flex justify-between items-center aria-selected:bg-[#FF983F] aria-selected:dark:bg-[#FF7A1F]"
+                  class="rounded-xl bg-[#F5F5F5] dark:bg-[#292929] text-sm flex gap-3 justify-between items-center aria-selected:bg-[#FF983F] aria-selected:dark:bg-[#FF7A1F]"
                   aria-selected={(id == conversations.current_id).to_string()}
                 >
-                  <div class="flex pl-2.5 py-2 cursor-pointer overflow-hidden text-ellipsis" {onclick}>
+                  <div class="w-full flex pl-2.5 py-2 cursor-pointer overflow-hidden text-ellipsis" {onclick}>
                     <span class={hash_class}>{"#"}</span>
                     <span class="whitespace-nowrap overflow-hidden text-ellipsis inline-block">{name}</span>
                   </div>
