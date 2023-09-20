@@ -315,17 +315,35 @@ pub fn App() -> Html {
     let curr_conv_name_ref = curr_conv_name_ref.clone();
     let editing_name = editing_name.clone();
     let messages_ref = messages_ref.clone();
+    let provider_ref = provider_ref.clone();
 
     use_effect_with_deps(
-      move |_| {
-        if *editing_name {
-          let curr_conv_name_el: HtmlInputElement = curr_conv_name_ref.cast().unwrap();
+      {
+        let conversations = conversations.clone();
 
-          editing_name.set(false);
-          curr_conv_name_el.set_disabled(true);
+        move |_| {
+          if *editing_name {
+            let curr_conv_name_el: HtmlInputElement = curr_conv_name_ref.cast().unwrap();
+
+            editing_name.set(false);
+            curr_conv_name_el.set_disabled(true);
+          }
+
+          let provider_el: HtmlSelectElement = provider_ref.cast().unwrap();
+          let child_nodes = provider_el.child_nodes();
+          let mut i = 0;
+          let curr_conv = conversations.current();
+
+          while let Some(node) = child_nodes.item(i) {
+            if node.unchecked_into::<HtmlOptionElement>().value().as_str() == curr_conv.provider.as_ref() {
+              provider_el.set_selected_index(i as i32);
+              break;
+            }
+            i += 1;
+          }
+
+          set_scroll_top_to_scroll_height(&messages_ref);
         }
-
-        set_scroll_top_to_scroll_height(&messages_ref);
       },
       conversations.current_id,
     );
@@ -346,7 +364,6 @@ pub fn App() -> Html {
           <div ref={conversations_ref} class="flex-1 flex flex-col gap-3 overflow-y-auto">
             {for conversations.names().enumerate().map(|(i, (id, name))| {
               let onclick = {
-                let provider_ref = provider_ref.clone();
                 let conversations = conversations.clone();
                 let sidebar_ref = sidebar_ref.clone();
                 let overlay_ref = overlay_ref.clone();
@@ -354,19 +371,6 @@ pub fn App() -> Html {
 
                 Callback::from(move |_| {
                   conversations.dispatch(ConversationsAction::SetCurrentId(id));
-
-                  let provider_el: HtmlSelectElement = provider_ref.cast().unwrap();
-                  let child_nodes = provider_el.child_nodes();
-                  let mut i = 0;
-                  let conv = conversations.get(&id);
-
-                  while let Some(node) = child_nodes.item(i) {
-                    if node.unchecked_into::<HtmlOptionElement>().value().as_str() == conv.provider.as_ref() {
-                      provider_el.set_selected_index(i as i32);
-                      break;
-                    }
-                    i += 1;
-                  }
 
                   close_sidebar_fn(&sidebar_ref, &overlay_ref, &invisible_overlay_ref);
                 })
