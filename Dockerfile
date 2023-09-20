@@ -14,8 +14,12 @@ RUN cargo build --release --features=ssr
 RUN rm -f target/release/deps/libregpt*
 
 COPY ./public ./public
-COPY ./src ./src
 COPY index.html tailwind.config.js Makefile ./
+
+RUN trunk build --release --public-url /pkg index.html
+RUN rm -f target/wasm32-unknown-unknown/release/deps/libregpt*
+
+COPY ./src ./src
 
 RUN make build MODE=release
 
