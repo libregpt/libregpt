@@ -65,7 +65,7 @@ impl super::Provider for Provider {
 
     let req = Request::builder()
       .method(Method::POST)
-      .uri("https://api.deepai.org/make_me_a_pizza")
+      .uri("https://api.deepai.org/make_me_a_sandwich")
       .header(header::USER_AGENT, user_agent)
       .header("api-key", api_key)
       .header(header::CONTENT_TYPE, content_type)
