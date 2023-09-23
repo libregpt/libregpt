@@ -1,6 +1,7 @@
 mod ui;
 
 use std::iter;
+use std::rc::Rc;
 
 use futures_util::StreamExt;
 use gloo_timers::future::TimeoutFuture;
@@ -21,11 +22,11 @@ use crate::ui::components::{Message, ThemeSwitcher};
 use crate::ui::reducers::{Conversations, ConversationsAction};
 use crate::ui::utils::{close_sidebar as close_sidebar_fn, set_scroll_top_to_scroll_height};
 
-const PROVIDERS: &[(&str, &str, bool)] = &[
-  ("ava", "Ava (gpt-3.5-turbo-0613)", true),
-  ("bai", "BAI (gpt-3.5)", true),
-  ("deepai", "DeepAI (gpt-3)", false),
-  ("you", "You", false),
+const PROVIDERS: &[(&str, &[&str], bool)] = &[
+  ("Ava", &["GPT-3.5-Turbo-0613"], true),
+  ("BAI", &["GPT-3.5"], true),
+  ("DeepAI", &["GPT-3"], false),
+  ("You", &[], false),
 ];
 
 #[function_component]
@@ -60,7 +61,7 @@ pub fn App() -> Html {
   };
 
   let conversations =
-    use_reducer(|| Conversations::new(PROVIDERS.iter().find(|p| !p.2).unwrap().0));
+    use_reducer(|| Conversations::new(PROVIDERS.iter().find(|p| !p.2).unwrap().0.to_lowercase().as_ref()));
 
   let mut_conversations = use_mut_ref(|| (conversations.ids(), conversations.current_id));
 
@@ -466,11 +467,26 @@ pub fn App() -> Html {
               </svg>
             </button>
           </div>
-          <div>
+          <div class="flex gap-3">
             <select ref={provider_ref} class="px-2.5 py-2 rounded-xl bg-[#F5F5F5] dark:bg-[#292929] text-sm disabled:text-black/50 dark:disabled:text-white/50" disabled={!curr_conv.messages.is_empty()} onchange={set_provider}>
-              {for PROVIDERS.iter().map(|&(value, name, disabled)| html! {
-                <option key={value} value={value} disabled={disabled} selected={curr_conv.provider.as_ref() == value}>{name}</option>
+              {for PROVIDERS.iter().map(|&(name, _, disabled)| {
+                let value = Rc::<str>::from(name.to_lowercase());
+
+                html! {
+                  <option key={value.clone()} value={value.clone()} disabled={disabled} selected={curr_conv.provider == value}>{name}</option>
+                }
               })}
+            </select>
+            <select class="px-2.5 py-2 rounded-xl bg-[#F5F5F5] dark:bg-[#292929] text-sm disabled:text-black/50 dark:disabled:text-white/50" disabled={true}>
+              if let Some((_, models, _)) = PROVIDERS.iter().find(|p| p.0.to_lowercase().as_str() == curr_conv.provider.as_ref()) { // always evaluates to Some(...), it's needed to declare the models variable and allow reuse
+                if models.is_empty() {
+                  <option>{"N/A"}</option>
+                } else {
+                  {for models.iter().map(|&model| html! {
+                    <option key={model} value={model.to_lowercase()}>{model}</option>
+                  })}
+                }
+              }
             </select>
           </div>
         </form>
