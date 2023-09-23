@@ -22,7 +22,7 @@ use crate::ui::reducers::{Conversations, ConversationsAction};
 use crate::ui::utils::{close_sidebar as close_sidebar_fn, set_scroll_top_to_scroll_height};
 
 const PROVIDERS: &[(&str, &str, bool)] = &[
-  ("ava", "Ava (gpt-3.5-turbo-0613)", false),
+  ("ava", "Ava (gpt-3.5-turbo-0613)", true),
   ("bai", "BAI (gpt-3.5)", true),
   ("deepai", "DeepAI (gpt-3)", false),
   ("you", "You", false),
