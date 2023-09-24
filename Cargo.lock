@@ -524,6 +524,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "getopts"
+version = "0.2.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14dbbfd5c71d70241ecf9e6f13737f7b5ce823821063188d7e46c41d371eebd5"
+dependencies = [
+ "unicode-width",
+]
+
+[[package]]
 name = "getrandom"
 version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -962,7 +971,7 @@ dependencies = [
  "log",
  "md5",
  "pin-project",
- "prose",
+ "pulldown-cmark",
  "rand",
  "rand_user_agent",
  "serde",
@@ -1250,13 +1259,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "prose"
-version = "0.2.0"
-source = "git+https://github.com/libregpt/prose#e5eeee65ac743eddc9f97a0233c8f4d8dfc706a9"
+name = "pulldown-cmark"
+version = "0.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77a1a2f1f0a7ecff9c31abbe177637be0e97a0aef46cf8738ece09327985d998"
 dependencies = [
- "itoa",
- "nom",
- "yew",
+ "bitflags 1.3.2",
+ "getopts",
+ "memchr",
+ "unicase",
 ]
 
 [[package]]
@@ -1905,6 +1916,12 @@ checksum = "5c5713f0fc4b5db668a2ac63cdb7bb4469d8c9fed047b1d0292cc7b0ce2ba921"
 dependencies = [
  "tinyvec",
 ]
+
+[[package]]
+name = "unicode-width"
+version = "0.1.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e51733f11c9c4f72aa0c160008246859e340b00807569a0da0e7a1079b27ba85"
 
 [[package]]
 name = "untrusted"

@@ -54,12 +54,16 @@ pre {
 
 code {
   font-family: monospace;
+  @apply px-1.5 py-0.5 m-0.5;
 }
 
-code.inline {
-  @apply px-1.5 py-1;
-}
+pre, code {
+   @apply inline-block bg-[#EFEFEF] dark:bg-[#404040] rounded-lg;
+ }
 
-pre, code.inline {
-  @apply bg-[#EFEFEF] dark:bg-[#404040] rounded-lg;
+pre > code {
+  padding: 0;
+  margin: 0;
+  background: none !important;
+  border-radius: 0;
 }

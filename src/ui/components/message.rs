@@ -29,10 +29,15 @@ pub fn Message(props: &MessageProps) -> Html {
     bubble_class.push_str(" px-3 py-2.5");
   }
 
+  let parser = pulldown_cmark::Parser::new_ext(&props.content, pulldown_cmark::Options::all());
+
+  let mut content = String::with_capacity(props.content.len() / 2 * 3);
+  pulldown_cmark::html::push_html(&mut content, parser);
+
   html! {
     <div class={container_class}>
       <div class={bubble_class}>
-        {prose::process(props.content.as_ref())}
+        {Html::from_html_unchecked(content.into())}
       </div>
     </div>
   }
