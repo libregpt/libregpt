@@ -8,8 +8,8 @@ edition = "2021"
 
 [dependencies]
 futures-util = { version = "0.3", default-features = false }
-gloo-net = { version = "0.3", default-features = false }
-gloo-timers = { version = "0.2", features = ["futures"] }
+gloo-net = { version = "0.4", default-features = false, features = ["http"] }
+gloo-timers = { version = "0.3", features = ["futures"] }
 js-sys = "0.3"
 pulldown-cmark = "0.9"
 serde = { version = "1", features = ["derive"] }
@@ -31,11 +31,11 @@ anyhow = "1"
 async-trait = "0.1"
 axum = "0.6"
 axum-server = { version = "0.5", features = ["tls-rustls"] }
-boring = "2"
+boring = "3"
 futures = "0.3"
 hex = "0.4"
 hyper = { version = "0.14", features = ["client", "http1", "http2"] }
-hyper-boring = "2"
+hyper-boring = "3"
 hyper-rustls = { version = "0.24", features = ["http2"] }
 itoa = "1"
 md5 = "0.7"

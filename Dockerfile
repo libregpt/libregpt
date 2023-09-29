@@ -1,4 +1,4 @@
-FROM rust:1.71-slim-buster AS builder
+FROM rust:1.71 AS builder
 
 RUN rustup target add wasm32-unknown-unknown
 RUN cargo install --locked trunk
