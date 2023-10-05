@@ -65,7 +65,7 @@ impl super::Provider for Provider {
 
     let req = Request::builder()
       .method(Method::POST)
-      .uri("https://api.deepai.org/make_me_a_sandwich")
+      .uri("https://api.deepai.org/hacking_is_a_crime")
       .header(header::USER_AGENT, user_agent)
       .header("api-key", api_key)
       .header(header::CONTENT_TYPE, content_type)
@@ -73,7 +73,7 @@ impl super::Provider for Provider {
 
     let res = self.client.request(req).await?;
 
-    Ok((None, res.into_body()))
+    Ok((None, if res.status().is_success() { res.into_body() } else { Body::from("error") }))
   }
 }
 
