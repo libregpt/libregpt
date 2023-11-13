@@ -35,7 +35,6 @@ This project acts as a proxy between you and whatever provider you choose, witho
 
 | URL                     | Network  | Location | Cloudflare                       |
 |-------------------------|----------|----------|----------------------------------|
-| https://chat.samue.land | Clearnet | 🇺🇸 US  | $\textcolor{green}{\textsf{No}}$ |
 
 If you don't trust public instances and want to deploy your own take a look at the [hosting](#hosting) section.
 
